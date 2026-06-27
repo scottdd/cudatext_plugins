@@ -1,6 +1,6 @@
 [
   {
-    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/v0.5/plugin.Tab_Menu.zip",
+    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-tabmenu-v0.5/plugin.Tab_Menu.zip",
     "desc": "Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys",
     "module": "cuda_tabmenu",
     "v": "0.5"
