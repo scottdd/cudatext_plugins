@@ -1,0 +1,6 @@
+0.5 (2026-06-27)
+initial release
+added tab context menu: Info, Open Path, Non-ASCII submenu
+added Non-ASCII submenu to Search menu
+added hotkeys: Info (Ctrl+Shift+Alt+I), Next/Prev Non-ASCII (Alt+F3 / Alt+Shift+F3)
+added transliterate to ASCII (vendored anyascii)

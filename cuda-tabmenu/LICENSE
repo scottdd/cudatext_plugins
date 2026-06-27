@@ -1,0 +1,13 @@
+Mozilla Public License Version 2.0
+==================================
+
+Copyright (c) 2026 Scott (https://github.com/scottdd)
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+---
+
+Third-party components bundled with this plugin are licensed separately.
+See anyascii/LICENSE (ISC License) and readme/readme.md for details.
