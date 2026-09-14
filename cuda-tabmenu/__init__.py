@@ -1,7 +1,8 @@
 import os
 import subprocess
+import traceback
 
-__version__ = '0.6'
+__version__ = '0.6.1'
 
 from cudatext import *
 from cudax_lib import get_translation
@@ -137,31 +138,48 @@ def open_folder(folder):
         msg_status(_('Error opening folder: {}').format(ex))
 
 
+def _log_error(where):
+    print('cuda_tabmenu error in %s:' % where)
+    traceback.print_exc()
+    msg_status(_('Tab Menu error; see Console'))
+
+
 class Command:
 
     def __init__(self):
         self._tab_ed = None
         self._highlighted = set()
 
-    def on_tab_menu(self, ed_self):
-        self._tab_ed = ed_self
-        tab_id = menu_proc('tab', MENU_GET_PROP)['id']
-        can_open_path = is_saved_file(ed_self.get_filename())
+    def on_start(self, ed_self):
+        print('Tab Menu %s loaded' % __version__)
 
-        self._set_menu_item(tab_id, CAP_INFO, 'cuda_tabmenu.menu_info', True)
-        self._set_menu_item(tab_id, CAP_OPEN_PATH, 'cuda_tabmenu.menu_open_path', can_open_path)
-        self._set_nonascii_submenu(tab_id, 'menu', is_text_document(ed_self))
+    def on_tab_menu(self, ed_self):
+        try:
+            self._tab_ed = ed_self
+            can_open_path = is_saved_file(ed_self.get_filename())
+            # 'tab' is the documented id for the UI-tab title popup
+            self._set_menu_item('tab', CAP_INFO, 'cuda_tabmenu.menu_info', True)
+            self._set_menu_item('tab', CAP_OPEN_PATH, 'cuda_tabmenu.menu_open_path', can_open_path)
+            self._set_nonascii_submenu('tab', 'menu', is_text_document(ed_self))
+        except Exception:
+            _log_error('on_tab_menu')
 
     def on_init_plugins_menu(self, ed_self):
-        self._install_search_menu()
+        try:
+            self._install_search_menu()
+        except Exception:
+            _log_error('on_init_plugins_menu')
 
     def on_change_slow(self, ed_self):
-        if not self._is_highlight_active(ed_self):
-            return
-        if not is_text_document(ed_self):
-            self._clear_highlight(ed_self)
-            return
-        highlight_nonascii(ed_self)
+        try:
+            if not self._is_highlight_active(ed_self):
+                return
+            if not is_text_document(ed_self):
+                self._clear_highlight(ed_self)
+                return
+            highlight_nonascii(ed_self)
+        except Exception:
+            _log_error('on_change_slow')
 
     def _mark_highlighted(self, ed, active):
         handle = editor_handle(ed)
@@ -234,24 +252,33 @@ class Command:
                 menu_proc(item_id, MENU_SET_ENABLED, command=False)
 
     def menu_info(self):
-        ed = self._tab_ed
-        if ed is None:
-            return
-        self._show_info_dialog(ed)
+        try:
+            ed = self._tab_ed
+            if ed is None:
+                return
+            self._show_info_dialog(ed)
+        except Exception:
+            _log_error('menu_info')
 
     def search_info(self):
-        self._show_info_dialog(ed)
+        try:
+            self._show_info_dialog(ed)
+        except Exception:
+            _log_error('search_info')
 
     def menu_open_path(self):
-        ed = self._tab_ed
-        if ed is None:
-            return
+        try:
+            ed = self._tab_ed
+            if ed is None:
+                return
 
-        filepath = ed.get_filename()
-        if not is_saved_file(filepath):
-            return
+            filepath = ed.get_filename()
+            if not is_saved_file(filepath):
+                return
 
-        open_folder(os.path.dirname(os.path.abspath(filepath)))
+            open_folder(os.path.dirname(os.path.abspath(filepath)))
+        except Exception:
+            _log_error('menu_open_path')
 
     def _ed_text(self, ed):
         if ed is None or not is_text_document(ed):
@@ -259,21 +286,27 @@ class Command:
         return ed
 
     def _do_highlight_nonascii(self, ed):
-        ed = self._ed_text(ed)
-        if ed is None:
-            msg_status(_('Not a text document'))
-            return
-        count = highlight_nonascii(ed)
-        self._mark_highlighted(ed, True)
-        msg_status(_('Highlighted {} non-ASCII character(s)').format(count))
+        try:
+            ed = self._ed_text(ed)
+            if ed is None:
+                msg_status(_('Not a text document'))
+                return
+            count = highlight_nonascii(ed)
+            self._mark_highlighted(ed, True)
+            msg_status(_('Highlighted {} non-ASCII character(s)').format(count))
+        except Exception:
+            _log_error('highlight_nonascii')
 
     def _do_unhighlight_nonascii(self, ed):
-        ed = self._ed_text(ed)
-        if ed is None:
-            msg_status(_('Not a text document'))
-            return
-        self._clear_highlight(ed)
-        msg_status(_('Non-ASCII highlights removed'))
+        try:
+            ed = self._ed_text(ed)
+            if ed is None:
+                msg_status(_('Not a text document'))
+                return
+            self._clear_highlight(ed)
+            msg_status(_('Non-ASCII highlights removed'))
+        except Exception:
+            _log_error('unhighlight_nonascii')
 
     def _goto_found_nonascii(self, ed, result):
         if result is None:
@@ -285,26 +318,32 @@ class Command:
             msg_status(_('Wrapped search'))
 
     def _do_next_nonascii(self, ed):
-        ed = self._ed_text(ed)
-        if ed is None:
-            msg_status(_('Not a text document'))
-            return
-        x, y, x1, y1 = ed.get_carets()[0]
-        self._goto_found_nonascii(
-            ed,
-            find_next_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
-        )
+        try:
+            ed = self._ed_text(ed)
+            if ed is None:
+                msg_status(_('Not a text document'))
+                return
+            x, y, x1, y1 = ed.get_carets()[0]
+            self._goto_found_nonascii(
+                ed,
+                find_next_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
+            )
+        except Exception:
+            _log_error('next_nonascii')
 
     def _do_prev_nonascii(self, ed):
-        ed = self._ed_text(ed)
-        if ed is None:
-            msg_status(_('Not a text document'))
-            return
-        x, y, x1, y1 = ed.get_carets()[0]
-        self._goto_found_nonascii(
-            ed,
-            find_prev_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
-        )
+        try:
+            ed = self._ed_text(ed)
+            if ed is None:
+                msg_status(_('Not a text document'))
+                return
+            x, y, x1, y1 = ed.get_carets()[0]
+            self._goto_found_nonascii(
+                ed,
+                find_prev_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
+            )
+        except Exception:
+            _log_error('prev_nonascii')
 
     def menu_highlight_nonascii(self):
         self._do_highlight_nonascii(self._tab_ed)
@@ -331,28 +370,31 @@ class Command:
         self._do_prev_nonascii(ed)
 
     def _do_transliterate_ascii(self, ed):
-        ed = self._ed_text(ed)
-        if ed is None:
-            msg_status(_('Not a text document'))
-            return
-        if msg_box(
-            _('Transliterate all non-ASCII characters to ASCII in this document?'),
-            MB_OKCANCEL + MB_ICONQUESTION,
-        ) != ID_OK:
-            return
+        try:
+            ed = self._ed_text(ed)
+            if ed is None:
+                msg_status(_('Not a text document'))
+                return
+            if msg_box(
+                _('Transliterate all non-ASCII characters to ASCII in this document?'),
+                MB_OKCANCEL + MB_ICONQUESTION,
+            ) != ID_OK:
+                return
 
-        text = ed.get_text_all()
-        new_text = transliterate_to_ascii(text)
-        if new_text == text:
-            msg_status(_('No non-ASCII characters found'))
-            return
+            text = ed.get_text_all()
+            new_text = transliterate_to_ascii(text)
+            if new_text == text:
+                msg_status(_('No non-ASCII characters found'))
+                return
 
-        keep_highlight = self._is_highlight_active(ed)
-        ed.set_text_all(new_text)
-        if keep_highlight:
-            highlight_nonascii(ed)
-            self._mark_highlighted(ed, True)
-        msg_status(_('Transliterated to ASCII'))
+            keep_highlight = self._is_highlight_active(ed)
+            ed.set_text_all(new_text)
+            if keep_highlight:
+                highlight_nonascii(ed)
+                self._mark_highlighted(ed, True)
+            msg_status(_('Transliterated to ASCII'))
+        except Exception:
+            _log_error('transliterate_ascii')
 
     def menu_transliterate_ascii(self):
         self._do_transliterate_ascii(self._tab_ed)

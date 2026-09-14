@@ -1,5 +1,5 @@
 [info]
-version=0.6
+version=0.6.1
 title=Tab Menu
 desc=Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys
 type=cudatext-plugin
@@ -9,7 +9,7 @@ api=1.0.300
 
 [item1]
 section=events
-events=on_tab_menu,on_init_plugins_menu,on_change_slow
+events=on_start,on_tab_menu,on_init_plugins_menu,on_change_slow
 
 [item10]
 section=commands

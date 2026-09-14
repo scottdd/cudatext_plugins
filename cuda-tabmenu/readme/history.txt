@@ -1,3 +1,7 @@
+0.6.1 (2026-09-14)
+log command errors to Console; print load message on start
+add tab-menu items via menu id "tab" (avoid MENU_GET_PROP crash)
+
 0.6 (2026-09-14)
 registered Highlight / Un-highlight / Transliterate in Plugins menu and Hotkeys
 refresh Non-ASCII highlight after edits (on_change_slow)
