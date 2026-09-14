@@ -1,3 +1,8 @@
+0.6.2 (2026-09-14)
+fix tab right-click items: string id "tab" rebuilds the stock popup on every menu_proc call
+add tab items to the numeric menu handle; bind commands to the Command instance
+print tracebacks to Console (stdout), not stderr
+
 0.6.1 (2026-09-14)
 log command errors to Console; print load message on start
 add tab-menu items via menu id "tab" (avoid MENU_GET_PROP crash)

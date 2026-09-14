@@ -2,7 +2,7 @@
 
 CudaText plugin: tab context menu tools, Non-ASCII navigation and transliteration, and file info.
 
-**Version:** 0.6.1  
+**Version:** 0.6.2  
 **Author:** Scott ([scottdd](https://github.com/scottdd))  
 **Repository:** [scottdd/cudatext_plugins — cuda-tabmenu](https://github.com/scottdd/cudatext_plugins/tree/main/cuda-tabmenu)
 

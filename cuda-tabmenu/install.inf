@@ -1,5 +1,5 @@
 [info]
-version=0.6.1
+version=0.6.2
 title=Tab Menu
 desc=Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys
 type=cudatext-plugin

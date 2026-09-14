@@ -1,5 +1,5 @@
 Plugin for CudaText: Tab Menu (cuda_tabmenu)
-Version 0.6.1
+Version 0.6.2
 Author: Scott (https://github.com/scottdd)
 
 Tab right-click menu:

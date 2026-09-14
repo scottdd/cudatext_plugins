@@ -1,8 +1,9 @@
 import os
 import subprocess
+import sys
 import traceback
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 from cudatext import *
 from cudax_lib import get_translation
@@ -139,9 +140,15 @@ def open_folder(folder):
 
 
 def _log_error(where):
-    print('cuda_tabmenu error in %s:' % where)
-    traceback.print_exc()
+    # print() goes to CudaText Console; traceback.print_exc() goes to stderr
+    # and is often invisible there.
+    print('cuda_tabmenu error in %s:\n%s' % (where, traceback.format_exc()))
+    sys.stdout.flush()
     msg_status(_('Tab Menu error; see Console'))
+
+
+print('cuda_tabmenu module imported, version %s' % __version__)
+sys.stdout.flush()
 
 
 class Command:
@@ -149,18 +156,48 @@ class Command:
     def __init__(self):
         self._tab_ed = None
         self._highlighted = set()
+        self._tab_menu_handle = None
+        print('Tab Menu Command() created, version %s' % __version__)
+        sys.stdout.flush()
 
     def on_start(self, ed_self):
         print('Tab Menu %s loaded' % __version__)
+        sys.stdout.flush()
+        msg_status('Tab Menu %s loaded' % __version__)
+
+    def _tab_root(self):
+        # String id 'tab' calls InitPopupTab on every menu_proc access and
+        # rebuilds the stock popup, wiping plugin items. Resolve the numeric
+        # handle once, then add only to that handle.
+        if self._tab_menu_handle not in (None, '', 0, '0'):
+            return self._tab_menu_handle
+        prop = menu_proc('tab', MENU_GET_PROP)
+        handle = prop.get('id') if isinstance(prop, dict) else None
+        if handle not in (None, '', 0, '0'):
+            self._tab_menu_handle = handle
+            return handle
+        return 'tab'
+
+    def _current_ed(self, prefer_tab=False):
+        if prefer_tab and self._tab_ed is not None:
+            return self._tab_ed
+        try:
+            if prefer_tab:
+                clicked = Editor(1)
+                if clicked is not None:
+                    return clicked
+        except Exception:
+            pass
+        return ed
 
     def on_tab_menu(self, ed_self):
         try:
             self._tab_ed = ed_self
+            tab_id = self._tab_root()
             can_open_path = is_saved_file(ed_self.get_filename())
-            # 'tab' is the documented id for the UI-tab title popup
-            self._set_menu_item('tab', CAP_INFO, 'cuda_tabmenu.menu_info', True)
-            self._set_menu_item('tab', CAP_OPEN_PATH, 'cuda_tabmenu.menu_open_path', can_open_path)
-            self._set_nonascii_submenu('tab', 'menu', is_text_document(ed_self))
+            self._set_menu_item(tab_id, CAP_INFO, self.menu_info, True)
+            self._set_menu_item(tab_id, CAP_OPEN_PATH, self.menu_open_path, can_open_path)
+            self._set_nonascii_submenu(tab_id, 'menu', is_text_document(ed_self))
         except Exception:
             _log_error('on_tab_menu')
 
@@ -220,62 +257,73 @@ class Command:
                 return True
         return False
 
-    def _set_menu_item(self, tab_id, caption, command, enabled):
-        self._remove_menu_item(tab_id, caption)
-        item_id = menu_proc(tab_id, MENU_ADD, caption=caption, command=command)
-        if not enabled:
+    def _add_menu_item(self, parent_id, caption, command, enabled=True):
+        item_id = menu_proc(parent_id, MENU_ADD, caption=caption, command=command)
+        if not enabled and item_id:
             menu_proc(item_id, MENU_SET_ENABLED, command=False)
+        return item_id
+
+    def _set_menu_item(self, parent_id, caption, command, enabled):
+        self._remove_menu_item(parent_id, caption)
+        self._add_menu_item(parent_id, caption, command, enabled)
+
+    def _add_nonascii_submenu(self, parent_id, cmd_prefix, enabled):
+        sub_id = menu_proc(parent_id, MENU_ADD, caption=CAP_NONASCII)
+        if not enabled:
+            menu_proc(sub_id, MENU_SET_ENABLED, command=False)
+        self._fill_nonascii_submenu(sub_id, cmd_prefix, enabled)
 
     def _set_nonascii_submenu(self, parent_id, cmd_prefix, enabled):
         self._remove_menu_item(parent_id, CAP_NONASCII)
-        parent_id = menu_proc(parent_id, MENU_ADD, caption=CAP_NONASCII)
-        if not enabled:
-            menu_proc(parent_id, MENU_SET_ENABLED, command=False)
-        self._fill_nonascii_submenu(parent_id, cmd_prefix, enabled)
+        self._add_nonascii_submenu(parent_id, cmd_prefix, enabled)
+
+    def _nonascii_commands(self, cmd_prefix):
+        if cmd_prefix == 'menu':
+            return [
+                (CAP_HIGHLIGHT_NONASCII, self.menu_highlight_nonascii),
+                (CAP_UNHIGHLIGHT_NONASCII, self.menu_unhighlight_nonascii),
+                ('-', None),
+                (CAP_NEXT_NONASCII, self.menu_next_nonascii),
+                (CAP_PREV_NONASCII, self.menu_prev_nonascii),
+                ('-', None),
+                (CAP_TRANSLITERATE_ASCII, self.menu_transliterate_ascii),
+            ]
+        return [
+            (CAP_HIGHLIGHT_NONASCII, self.search_highlight_nonascii),
+            (CAP_UNHIGHLIGHT_NONASCII, self.search_unhighlight_nonascii),
+            ('-', None),
+            (CAP_NEXT_NONASCII, self.search_next_nonascii),
+            (CAP_PREV_NONASCII, self.search_prev_nonascii),
+            ('-', None),
+            (CAP_TRANSLITERATE_ASCII, self.search_transliterate_ascii),
+        ]
 
     def _fill_nonascii_submenu(self, parent_id, cmd_prefix, enabled=True):
-        submenu_items = [
-            (CAP_HIGHLIGHT_NONASCII, f'cuda_tabmenu.{cmd_prefix}_highlight_nonascii'),
-            (CAP_UNHIGHLIGHT_NONASCII, f'cuda_tabmenu.{cmd_prefix}_unhighlight_nonascii'),
-            ('-', ''),
-            (CAP_NEXT_NONASCII, f'cuda_tabmenu.{cmd_prefix}_next_nonascii'),
-            (CAP_PREV_NONASCII, f'cuda_tabmenu.{cmd_prefix}_prev_nonascii'),
-            ('-', ''),
-            (CAP_TRANSLITERATE_ASCII, f'cuda_tabmenu.{cmd_prefix}_transliterate_ascii'),
-        ]
-        for caption, command in submenu_items:
+        for caption, command in self._nonascii_commands(cmd_prefix):
             if caption == '-':
                 menu_proc(parent_id, MENU_ADD, caption='-')
                 continue
-            item_id = menu_proc(parent_id, MENU_ADD, caption=caption, command=command)
-            if not enabled:
-                menu_proc(item_id, MENU_SET_ENABLED, command=False)
+            self._add_menu_item(parent_id, caption, command, enabled)
 
-    def menu_info(self):
+    def menu_info(self, info=''):
         try:
-            ed = self._tab_ed
-            if ed is None:
-                return
-            self._show_info_dialog(ed)
+            self._show_info_dialog(self._current_ed(prefer_tab=True))
         except Exception:
             _log_error('menu_info')
 
-    def search_info(self):
+    def search_info(self, info=''):
         try:
-            self._show_info_dialog(ed)
+            msg_status(_('Tab Menu: Info'))
+            self._show_info_dialog(self._current_ed())
         except Exception:
             _log_error('search_info')
 
-    def menu_open_path(self):
+    def menu_open_path(self, info=''):
         try:
-            ed = self._tab_ed
-            if ed is None:
-                return
-
-            filepath = ed.get_filename()
+            ed_tab = self._current_ed(prefer_tab=True)
+            filepath = ed_tab.get_filename()
             if not is_saved_file(filepath):
                 return
-
             open_folder(os.path.dirname(os.path.abspath(filepath)))
         except Exception:
             _log_error('menu_open_path')
@@ -345,29 +393,29 @@ class Command:
         except Exception:
             _log_error('prev_nonascii')
 
-    def menu_highlight_nonascii(self):
-        self._do_highlight_nonascii(self._tab_ed)
+    def menu_highlight_nonascii(self, info=''):
+        self._do_highlight_nonascii(self._current_ed(prefer_tab=True))
 
-    def menu_unhighlight_nonascii(self):
-        self._do_unhighlight_nonascii(self._tab_ed)
+    def menu_unhighlight_nonascii(self, info=''):
+        self._do_unhighlight_nonascii(self._current_ed(prefer_tab=True))
 
-    def menu_next_nonascii(self):
-        self._do_next_nonascii(self._tab_ed)
+    def menu_next_nonascii(self, info=''):
+        self._do_next_nonascii(self._current_ed(prefer_tab=True))
 
-    def menu_prev_nonascii(self):
-        self._do_prev_nonascii(self._tab_ed)
+    def menu_prev_nonascii(self, info=''):
+        self._do_prev_nonascii(self._current_ed(prefer_tab=True))
 
-    def search_highlight_nonascii(self):
-        self._do_highlight_nonascii(ed)
+    def search_highlight_nonascii(self, info=''):
+        self._do_highlight_nonascii(self._current_ed())
 
-    def search_unhighlight_nonascii(self):
-        self._do_unhighlight_nonascii(ed)
+    def search_unhighlight_nonascii(self, info=''):
+        self._do_unhighlight_nonascii(self._current_ed())
 
-    def search_next_nonascii(self):
-        self._do_next_nonascii(ed)
+    def search_next_nonascii(self, info=''):
+        self._do_next_nonascii(self._current_ed())
 
-    def search_prev_nonascii(self):
-        self._do_prev_nonascii(ed)
+    def search_prev_nonascii(self, info=''):
+        self._do_prev_nonascii(self._current_ed())
 
     def _do_transliterate_ascii(self, ed):
         try:
@@ -396,11 +444,11 @@ class Command:
         except Exception:
             _log_error('transliterate_ascii')
 
-    def menu_transliterate_ascii(self):
-        self._do_transliterate_ascii(self._tab_ed)
+    def menu_transliterate_ascii(self, info=''):
+        self._do_transliterate_ascii(self._current_ed(prefer_tab=True))
 
-    def search_transliterate_ascii(self):
-        self._do_transliterate_ascii(ed)
+    def search_transliterate_ascii(self, info=''):
+        self._do_transliterate_ascii(self._current_ed())
 
     def _build_info_text(self, ed):
         filepath = ed.get_filename()
