@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a plugin zip, update addons/plugins.json, push, and publish a GitHub release."""
+"""Build a plugin zip, update addons/scottdd-plugins.json, push, and publish a GitHub release."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CHANNEL = ROOT / "addons" / "plugins.json"
+CHANNEL = ROOT / "addons" / "scottdd-plugins.json"
 
 
 class ReleaseError(Exception):

@@ -43,7 +43,7 @@ Prerequisites: [GitHub CLI](https://cli.github.com/) logged in (`gh auth login`)
 This will:
 
 - run `cuda-tabmenu/pack.sh` → `dist/plugin.Name.zip`
-- update `addons/plugins.json` and the plugin's `addon-channel.json`
+- update `addons/scottdd-plugins.json` and the plugin's `addon-channel.json`
 - commit and push those channel changes to `main`
 - create (or update) a GitHub release tagged `cuda-tabmenu-vX.Y` with the zip attached
 
@@ -53,7 +53,9 @@ Skip GitHub upload: `--no-github`
 
 Users add the raw channel URL in **Plugins → Addon Manager → Config → User channels**:
 
-`https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/plugins.json`
+`https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json`
+
+The filename must not be `plugins.json`: Addon Manager caches channels by basename, and CudaText’s official channel already uses that name.
 
 ## Adding another plugin
 
@@ -64,4 +66,4 @@ Create a new sibling directory (e.g. `cuda-my-plugin/`) with:
 - `readme/readme.txt`, `readme/history.txt`
 - `pack.sh` producing `dist/plugin.My_Plugin.zip`
 - `release.json` with the zip file name (see `cuda-tabmenu/release.json`)
-- An entry in `addons/plugins.json` (the release script maintains this)
+- An entry in `addons/scottdd-plugins.json` (the release script maintains this)

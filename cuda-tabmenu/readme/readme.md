@@ -53,7 +53,7 @@ Addon Manager **Update** compares the version in its channel list (`v`) with the
 To receive updates:
 
 1. Publish each release as `plugin.Tab_Menu.zip` on GitHub (name must be `kind.Name.zip` for channel parsing).
-2. Host a channel JSON. The monorepo channel is [`addons/plugins.json`](../addons/plugins.json); per-plugin `addon-channel.json` is a copy template. Add the raw URL under **Plugins → Addon Manager → Config → User channels**.
+2. Host a channel JSON. The monorepo channel is [`addons/scottdd-plugins.json`](../addons/scottdd-plugins.json); per-plugin `addon-channel.json` is a copy template. Add the raw URL under **Plugins → Addon Manager → Config → User channels**.
 3. Install (or update) via **Addon Manager → Install** from that channel, not only by opening a local zip. Opening a zip manually installs the plugin but does not register a version for Update.
 
 Git clone / symlink installs show as **Git** in Update and are not version-checked.
@@ -101,7 +101,7 @@ From the monorepo root (after bumping version in `install.inf`, `__init__.py`, a
 ./release.sh cuda-tabmenu
 ```
 
-This packs the zip, updates `addons/plugins.json`, pushes, and publishes a GitHub release.
+This packs the zip, updates `addons/scottdd-plugins.json`, pushes, and publishes a GitHub release.
 
 ## Third-party code
 

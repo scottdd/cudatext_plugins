@@ -16,7 +16,7 @@ Default hotkeys:
   Alt+Shift+F3      - Previous Non-ASCII character
 
 Install: open plugin.Tab_Menu.zip in CudaText, or copy folder to py/cuda_tabmenu/
-Updates: install from Addon Manager channel (see ../addons/plugins.json); version in channel "v" field
+Updates: install from Addon Manager channel (see ../addons/scottdd-plugins.json); version in channel "v" field
 
 Homepage: https://github.com/scottdd/cudatext_plugins/tree/main/cuda-tabmenu
 License: MPL 2.0 (plugin); AnyAscii ISC (see anyascii/LICENSE)
