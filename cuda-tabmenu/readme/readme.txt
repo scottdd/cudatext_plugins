@@ -1,5 +1,5 @@
 Plugin for CudaText: Tab Menu (cuda_tabmenu)
-Version 0.5
+Version 0.6
 Author: Scott (https://github.com/scottdd)
 
 Tab right-click menu:
@@ -7,7 +7,8 @@ Tab right-click menu:
   Open Path - open folder in file manager (saved files only)
   Non-ASCII - highlight, navigate, transliterate
 
-Search menu: same Non-ASCII submenu (focused editor).
+Search menu and Plugins menu: same Non-ASCII commands (focused editor).
+Highlight refreshes after edits. Next/Prev wrap when Find "Wrapped search" (O) is on.
 
 Default hotkeys:
   Ctrl+Shift+Alt+I  - Info

@@ -1,3 +1,10 @@
+0.6 (2026-09-14)
+registered Highlight / Un-highlight / Transliterate in Plugins menu and Hotkeys
+refresh Non-ASCII highlight after edits (on_change_slow)
+Next/Previous Non-ASCII wrap using Find dialog Wrapped search option (O)
+added unit tests
+fixed pack.sh SIGPIPE under pipefail; zip omits release.json and tests
+
 0.5 (2026-06-27)
 initial release
 added tab context menu: Info, Open Path, Non-ASCII submenu

@@ -2,7 +2,7 @@
 
 CudaText plugin: tab context menu tools, Non-ASCII navigation and transliteration, and file info.
 
-**Version:** 0.5  
+**Version:** 0.6  
 **Author:** Scott ([scottdd](https://github.com/scottdd))  
 **Repository:** [scottdd/cudatext_plugins — cuda-tabmenu](https://github.com/scottdd/cudatext_plugins/tree/main/cuda-tabmenu)
 
@@ -17,9 +17,13 @@ CudaText plugin: tab context menu tools, Non-ASCII navigation and transliteratio
   - Next / Previous Non-ASCII character (moves caret and selects the character)
   - Transliterate to ASCII (whole document; asks for confirmation)
 
-### Search menu
+Highlight markers are refreshed after edits (on CudaText’s delayed change event). Transliterate keeps highlighting if it was on.
 
-The same **Non-ASCII** submenu is added under **Search** in the main menu bar. Commands apply to the **focused** editor.
+Next / Previous wrap at the document edge when Find’s **Wrapped search** option (O) is on — the same toggle used by F3 / Shift+F3. Status bar shows `Wrapped search` when a search crosses the edge.
+
+### Search menu and Plugins menu
+
+The same **Non-ASCII** commands appear under **Search** (focused editor) and **Plugins → Tab Menu**.
 
 ### Hotkeys (defaults)
 
@@ -29,7 +33,7 @@ The same **Non-ASCII** submenu is added under **Search** in the main menu bar. C
 | Tab Menu → Non-ASCII → Next | `Alt+F3` |
 | Tab Menu → Non-ASCII → Previous | `Alt+Shift+F3` |
 
-Hotkeys can be changed in **Options → Hotkeys**. Highlight, un-highlight, and transliterate are menu-only (no default hotkeys).
+Highlight, un-highlight, and transliterate have no default hotkeys; they can be bound in **Options → Hotkeys**.
 
 `Alt+F3` / `Alt+Shift+F3` mirror CudaText’s find navigation (`F3` / `Shift+F3`).
 
@@ -79,6 +83,25 @@ From this directory:
 ```
 
 Output: `dist/plugin.Tab_Menu.zip`
+
+## Tests
+
+From the monorepo root:
+
+```bash
+python3 -m unittest discover -s cuda-tabmenu/tests -t cuda-tabmenu
+python3 -m unittest discover -s scripts -t scripts
+```
+
+## Releasing
+
+From the monorepo root (after bumping version in `install.inf`, `__init__.py`, and `readme/history.txt`):
+
+```bash
+./release.sh cuda-tabmenu
+```
+
+This packs the zip, updates `addons/plugins.json`, pushes, and publishes a GitHub release.
 
 ## Third-party code
 

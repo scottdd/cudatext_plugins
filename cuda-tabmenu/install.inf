@@ -1,5 +1,5 @@
 [info]
-version=0.5
+version=0.6
 title=Tab Menu
 desc=Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys
 type=cudatext-plugin
@@ -9,7 +9,7 @@ api=1.0.300
 
 [item1]
 section=events
-events=on_tab_menu,on_init_plugins_menu
+events=on_tab_menu,on_init_plugins_menu,on_change_slow
 
 [item10]
 section=commands
@@ -19,12 +19,27 @@ method=search_info
 
 [item11]
 section=commands
+caption=Tab Menu\&Non-ASCII\&Highlight Non-ASCII
+method=search_highlight_nonascii
+
+[item12]
+section=commands
+caption=Tab Menu\&Non-ASCII\&Un-highlight Non-ASCII
+method=search_unhighlight_nonascii
+
+[item13]
+section=commands
 caption=Tab Menu\&Non-ASCII\&Next Non-ASCII Character
 hotkey=Alt+F3
 method=search_next_nonascii
 
-[item12]
+[item14]
 section=commands
 caption=Tab Menu\&Non-ASCII\&Previous Non-ASCII Character
 hotkey=Alt+Shift+F3
 method=search_prev_nonascii
+
+[item15]
+section=commands
+caption=Tab Menu\&Non-ASCII\&Transliterate to ASCII
+method=search_transliterate_ascii

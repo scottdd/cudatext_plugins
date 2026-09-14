@@ -1,14 +1,20 @@
-import math
 import os
-import re
 import subprocess
 
-__version__ = '0.5'
+__version__ = '0.6'
 
 from cudatext import *
 from cudax_lib import get_translation
 
 from .anyascii import anyascii as transliterate_to_ascii
+from .logic import (
+    collect_nonascii_positions,
+    count_words,
+    find_next_nonascii,
+    find_prev_nonascii,
+    finder_wrap_enabled,
+    format_size,
+)
 
 _ = get_translation(__file__)
 
@@ -38,26 +44,12 @@ SEARCH_MENU_TAG = 'cuda_tabmenu_search'
 OS_SUFFIX = app_proc(PROC_GET_OS_SUFFIX, '')
 
 
-def format_size(size_bytes):
-    size_bytes = int(size_bytes)
-    if size_bytes == 0:
-        return '0 B'
-    units = ('B', 'kB', 'MB', 'GB', 'TB')
-    i = min(int(math.floor(math.log(size_bytes, 1024))), len(units) - 1)
-    value = round(size_bytes / math.pow(1024, i), 2)
-    return '%s %s' % (value, units[i])
-
-
 def is_saved_file(filepath):
     return bool(filepath) and os.path.isfile(filepath)
 
 
 def is_text_document(ed):
     return ed.get_prop(PROP_KIND) == 'text'
-
-
-def count_words(text):
-    return len(re.findall(r'\S+', text))
 
 
 def get_file_status(ed):
@@ -82,51 +74,25 @@ def get_lexer(ed):
     return lex
 
 
-def is_non_ascii_char(ch):
-    return ord(ch) > 127
+def editor_lines(ed):
+    return [ed.get_text_line(i) for i in range(ed.get_line_count())]
 
 
-def collect_nonascii_positions(ed):
-    xs, ys, lens = [], [], []
-    for row in range(ed.get_line_count()):
-        line = ed.get_text_line(row)
-        for col, ch in enumerate(line):
-            if is_non_ascii_char(ch):
-                xs.append(col)
-                ys.append(row)
-                lens.append(1)
-    return xs, ys, lens
+def editor_handle(ed):
+    return ed.get_prop(PROP_HANDLE_SELF)
 
 
-def find_next_nonascii(ed, x, y):
-    line = ed.get_text_line(y)
-    for col in range(x + 1, len(line)):
-        if is_non_ascii_char(line[col]):
-            return col, y
-    for row in range(y + 1, ed.get_line_count()):
-        line = ed.get_text_line(row)
-        for col, ch in enumerate(line):
-            if is_non_ascii_char(ch):
-                return col, row
-    return None
-
-
-def find_prev_nonascii(ed, x, y):
-    line = ed.get_text_line(y)
-    for col in range(x - 1, -1, -1):
-        if is_non_ascii_char(line[col]):
-            return col, y
-    for row in range(y - 1, -1, -1):
-        line = ed.get_text_line(row)
-        for col in range(len(line) - 1, -1, -1):
-            if is_non_ascii_char(line[col]):
-                return col, row
-    return None
+def highlight_is_present(ed):
+    marks = ed.attr(MARKERS_GET_DICT) or []
+    for mark in marks:
+        if isinstance(mark, dict) and mark.get('tag') == NONASCII_MARK_TAG:
+            return True
+    return False
 
 
 def highlight_nonascii(ed):
     ed.attr(MARKERS_DELETE_BY_TAG, NONASCII_MARK_TAG)
-    xs, ys, lens = collect_nonascii_positions(ed)
+    xs, ys, lens = collect_nonascii_positions(editor_lines(ed))
     if xs:
         ed.attr(MARKERS_ADD_MANY, NONASCII_MARK_TAG, xs, ys, lens, **NONASCII_HIGHLIGHT_STYLE)
     return len(xs)
@@ -143,6 +109,14 @@ def goto_nonascii(ed, pos):
     ed.set_caret(col, row, col + 1, row)
     ed.focus()
     return True
+
+
+def get_finder_wrap():
+    try:
+        prop = app_proc(PROC_GET_FINDER_PROP, '')
+    except Exception:
+        return False
+    return finder_wrap_enabled(prop)
 
 
 def open_folder(folder):
@@ -167,6 +141,7 @@ class Command:
 
     def __init__(self):
         self._tab_ed = None
+        self._highlighted = set()
 
     def on_tab_menu(self, ed_self):
         self._tab_ed = ed_self
@@ -179,6 +154,34 @@ class Command:
 
     def on_init_plugins_menu(self, ed_self):
         self._install_search_menu()
+
+    def on_change_slow(self, ed_self):
+        if not self._is_highlight_active(ed_self):
+            return
+        if not is_text_document(ed_self):
+            self._clear_highlight(ed_self)
+            return
+        highlight_nonascii(ed_self)
+
+    def _mark_highlighted(self, ed, active):
+        handle = editor_handle(ed)
+        if active:
+            self._highlighted.add(handle)
+        else:
+            self._highlighted.discard(handle)
+
+    def _is_highlight_active(self, ed):
+        handle = editor_handle(ed)
+        if handle in self._highlighted:
+            return True
+        if highlight_is_present(ed):
+            self._highlighted.add(handle)
+            return True
+        return False
+
+    def _clear_highlight(self, ed):
+        unhighlight_nonascii(ed)
+        self._mark_highlighted(ed, False)
 
     def _install_search_menu(self):
         items = menu_proc('top-sr', MENU_ENUM) or []
@@ -193,7 +196,7 @@ class Command:
         self._fill_nonascii_submenu(parent_id, 'search')
 
     def _remove_menu_item(self, menu_id, caption):
-        for item in menu_proc(menu_id, MENU_ENUM):
+        for item in menu_proc(menu_id, MENU_ENUM) or []:
             if item.get('cap') == caption:
                 menu_proc(item['id'], MENU_REMOVE)
                 return True
@@ -261,6 +264,7 @@ class Command:
             msg_status(_('Not a text document'))
             return
         count = highlight_nonascii(ed)
+        self._mark_highlighted(ed, True)
         msg_status(_('Highlighted {} non-ASCII character(s)').format(count))
 
     def _do_unhighlight_nonascii(self, ed):
@@ -268,8 +272,17 @@ class Command:
         if ed is None:
             msg_status(_('Not a text document'))
             return
-        unhighlight_nonascii(ed)
+        self._clear_highlight(ed)
         msg_status(_('Non-ASCII highlights removed'))
+
+    def _goto_found_nonascii(self, ed, result):
+        if result is None:
+            msg_status(_('No more non-ASCII characters'))
+            return
+        col, row, wrapped = result
+        goto_nonascii(ed, (col, row))
+        if wrapped:
+            msg_status(_('Wrapped search'))
 
     def _do_next_nonascii(self, ed):
         ed = self._ed_text(ed)
@@ -277,8 +290,10 @@ class Command:
             msg_status(_('Not a text document'))
             return
         x, y, x1, y1 = ed.get_carets()[0]
-        if not goto_nonascii(ed, find_next_nonascii(ed, x, y)):
-            msg_status(_('No more non-ASCII characters'))
+        self._goto_found_nonascii(
+            ed,
+            find_next_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
+        )
 
     def _do_prev_nonascii(self, ed):
         ed = self._ed_text(ed)
@@ -286,8 +301,10 @@ class Command:
             msg_status(_('Not a text document'))
             return
         x, y, x1, y1 = ed.get_carets()[0]
-        if not goto_nonascii(ed, find_prev_nonascii(ed, x, y)):
-            msg_status(_('No more non-ASCII characters'))
+        self._goto_found_nonascii(
+            ed,
+            find_prev_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
+        )
 
     def menu_highlight_nonascii(self):
         self._do_highlight_nonascii(self._tab_ed)
@@ -330,7 +347,11 @@ class Command:
             msg_status(_('No non-ASCII characters found'))
             return
 
+        keep_highlight = self._is_highlight_active(ed)
         ed.set_text_all(new_text)
+        if keep_highlight:
+            highlight_nonascii(ed)
+            self._mark_highlighted(ed, True)
         msg_status(_('Transliterated to ASCII'))
 
     def menu_transliterate_ascii(self):
@@ -360,6 +381,7 @@ class Command:
             _('Lexer: {}').format(get_lexer(ed)),
         ]
 
+        text = None
         if saved:
             lines.append(_('Size on disk: {}').format(format_size(os.path.getsize(filepath))))
 
@@ -370,11 +392,9 @@ class Command:
         if is_text_document(ed):
             line_count = ed.get_line_count()
             lines.append(_('Line count: {}').format(line_count))
-            if modified or not saved:
-                word_count = count_words(text)
-            else:
-                word_count = count_words(ed.get_text_all())
-            lines.append(_('Word count: {}').format(word_count))
+            if text is None:
+                text = ed.get_text_all()
+            lines.append(_('Word count: {}').format(count_words(text)))
 
         return '\n'.join(lines)
 

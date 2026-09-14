@@ -22,12 +22,38 @@ Restart CudaText or use **Plugins → Reload plugins**.
 
 **Note:** Addon Manager **Install from GitHub** only works when the repository root name matches `install.inf` `subdir=`. For this monorepo, use zip install, a channel URL, or a symlink — not the monorepo root URL.
 
+## Tests
+
+```bash
+python3 -m unittest discover -s cuda-tabmenu/tests -t cuda-tabmenu
+python3 -m unittest discover -s scripts -t scripts
+```
+
 ## Releases and updates
 
-1. Build a plugin zip from its subdirectory: `./pack.sh` → `dist/plugin.Name.zip`
-2. Attach zips to [GitHub Releases](https://github.com/scottdd/cudatext_plugins/releases) (zip name must be `kind.Name.zip`)
-3. Update `addons/plugins.json` with the release URL and `"v"` version
-4. Users add the raw channel URL in **Plugins → Addon Manager → Config → User channels**
+Prerequisites: [GitHub CLI](https://cli.github.com/) logged in (`gh auth login`).
+
+1. Bump `version=` in `install.inf`, `__version__` in `__init__.py`, and `readme/history.txt`
+2. From the repo root, run:
+
+```bash
+./release.sh cuda-tabmenu
+```
+
+This will:
+
+- run `cuda-tabmenu/pack.sh` → `dist/plugin.Name.zip`
+- update `addons/plugins.json` and the plugin's `addon-channel.json`
+- commit and push those channel changes to `main`
+- create (or update) a GitHub release tagged `cuda-tabmenu-vX.Y` with the zip attached
+
+Dry run: `./release.sh cuda-tabmenu --dry-run`  
+Skip git push: `--no-git`  
+Skip GitHub upload: `--no-github`
+
+Users add the raw channel URL in **Plugins → Addon Manager → Config → User channels**:
+
+`https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/plugins.json`
 
 ## Adding another plugin
 
@@ -37,4 +63,5 @@ Create a new sibling directory (e.g. `cuda-my-plugin/`) with:
 - `__init__.py` with `class Command`
 - `readme/readme.txt`, `readme/history.txt`
 - `pack.sh` producing `dist/plugin.My_Plugin.zip`
-- An entry in `addons/plugins.json`
+- `release.json` with the zip file name (see `cuda-tabmenu/release.json`)
+- An entry in `addons/plugins.json` (the release script maintains this)

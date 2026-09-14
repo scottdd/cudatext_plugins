@@ -18,10 +18,13 @@ rsync -a \
   --exclude __pycache__ \
   --exclude '*.pyc' \
   --exclude .git \
+  --exclude .gitignore \
   --exclude dist \
   --exclude pack.sh \
   --exclude install.inf \
   --exclude addon-channel.json \
+  --exclude release.json \
+  --exclude tests \
   "$ROOT/" "$STAGE/$SUBDIR/"
 cp "$ROOT/install.inf" "$STAGE/$SUBDIR/"
 
@@ -35,4 +38,5 @@ rm -f "$ZIP"
 )
 
 echo "Created $ZIP"
-unzip -l "$ZIP" | head -20
+# head closes the pipe early; with pipefail that yields exit 141 (SIGPIPE)
+unzip -l "$ZIP" | head -20 || true
