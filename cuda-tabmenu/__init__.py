@@ -3,7 +3,7 @@ import subprocess
 import sys
 import traceback
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 from cudatext import *
 from cudax_lib import get_translation

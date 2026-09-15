@@ -6,14 +6,16 @@ STAGE="$(mktemp -d)"
 OUT="$ROOT/dist"
 # Addon Manager channel URLs must match: .../kind.Name.zip (see addon-channel.json)
 ZIP="$OUT/plugin.Tab_Menu.zip"
-SUBDIR=cuda_tabmenu
 
 cleanup() { rm -rf "$STAGE"; }
 trap cleanup EXIT
 
-mkdir -p "$STAGE/$SUBDIR" "$OUT"
+mkdir -p "$STAGE" "$OUT"
 
-cp "$ROOT/install.inf" "$STAGE/"
+# Official CudaText plugin zips are FLAT: install.inf and __init__.py at the zip
+# root. Addon Manager copies that unzip root into py/<subdir>/. Wrapping files
+# in a cuda_tabmenu/ folder installs as py/cuda_tabmenu/cuda_tabmenu/ so Python
+# imports an empty package and Command() never runs.
 rsync -a \
   --exclude __pycache__ \
   --exclude '*.pyc' \
@@ -21,20 +23,17 @@ rsync -a \
   --exclude .gitignore \
   --exclude dist \
   --exclude pack.sh \
-  --exclude install.inf \
   --exclude addon-channel.json \
   --exclude release.json \
   --exclude tests \
-  "$ROOT/" "$STAGE/$SUBDIR/"
-cp "$ROOT/install.inf" "$STAGE/$SUBDIR/"
+  "$ROOT/" "$STAGE/"
 
-rm -rf "$STAGE/$SUBDIR/dist" 2>/dev/null || true
 find "$STAGE" -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
 
 rm -f "$ZIP"
 (
   cd "$STAGE"
-  zip -r "$ZIP" install.inf "$SUBDIR"
+  zip -r "$ZIP" .
 )
 
 echo "Created $ZIP"

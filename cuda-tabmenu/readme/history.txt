@@ -1,3 +1,7 @@
+0.6.3 (2026-09-15)
+pack a flat plugin zip (install.inf and __init__.py at zip root)
+nested cuda_tabmenu/ in the zip installed as py/cuda_tabmenu/cuda_tabmenu/ so Command never loaded
+
 0.6.2 (2026-09-14)
 fix tab right-click items: string id "tab" rebuilds the stock popup on every menu_proc call
 add tab items to the numeric menu handle; bind commands to the Command instance

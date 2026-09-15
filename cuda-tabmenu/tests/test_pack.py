@@ -16,10 +16,13 @@ class PackScriptTests(unittest.TestCase):
         self.assertTrue(ZIP_PATH.is_file())
 
     def test_listing_has_plugin_files(self):
-        listing = subprocess.check_output(['unzip', '-l', str(ZIP_PATH)], text=True)
-        self.assertIn('install.inf', listing)
-        self.assertIn('cuda_tabmenu/__init__.py', listing)
-        self.assertIn('cuda_tabmenu/logic.py', listing)
+        names = subprocess.check_output(['unzip', '-Z', '-1', str(ZIP_PATH)], text=True).splitlines()
+        names = [n.lstrip('./') for n in names]
+        self.assertIn('install.inf', names)
+        self.assertIn('__init__.py', names)
+        self.assertIn('logic.py', names)
+        self.assertIn('anyascii/__init__.py', names)
+        self.assertNotIn('cuda_tabmenu/__init__.py', names)
 
     def test_listing_excludes_dev_files(self):
         listing = subprocess.check_output(['unzip', '-l', str(ZIP_PATH)], text=True)
