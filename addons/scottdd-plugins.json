@@ -1,9 +1,9 @@
 [
   {
-    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/addon_update-v0.1.0/plugin.Addon_Update.zip",
+    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/addon_update-v0.1.1/plugin.Addons_Update.zip",
     "desc": "Auto-check and silently update installed CudaText add-ons on startup and on a timer (default every 12 hours)",
     "module": "cuda_addon_update",
-    "v": "0.1.0"
+    "v": "0.1.1"
   },
   {
     "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-tabmenu-v0.6.3/plugin.Tab_Menu.zip",
