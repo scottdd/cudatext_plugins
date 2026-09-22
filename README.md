@@ -9,6 +9,7 @@ Each subdirectory is a standalone plugin with its own `install.inf`, `pack.sh`, 
 | Directory | Module (`py/…`) | Description |
 |-----------|-----------------|-------------|
 | [cuda-tabmenu](cuda-tabmenu/) | `cuda_tabmenu` | Tab menu: Info, Open Path, Non-ASCII tools |
+| [addon_update](addon_update/) | `cuda_addon_update` | Auto-update installed add-ons on startup / timer |
 
 ## Development install
 
@@ -16,6 +17,7 @@ Clone this repo, then symlink a plugin folder into CudaText's `py` directory. Th
 
 ```bash
 ln -sfn ~/Projects/cudatext_plugins/cuda-tabmenu ~/.config/cudatext/py/cuda_tabmenu
+ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addon_update
 ```
 
 Restart CudaText or use **Plugins → Reload plugins**.
@@ -26,6 +28,7 @@ Restart CudaText or use **Plugins → Reload plugins**.
 
 ```bash
 python3 -m unittest discover -s cuda-tabmenu/tests -t cuda-tabmenu
+python3 -m unittest discover -s addon_update/tests -t addon_update
 python3 -m unittest discover -s scripts -t scripts
 ```
 

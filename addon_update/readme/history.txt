@@ -1,0 +1,5 @@
+0.1.0 (2026-09-21)
+- Initial release: check on startup (delayed) and every N hours (default 12)
+- Silently updates outdated installed plugins/linters/formatters/treehelpers
+- Git-cloned plugins: git stash + git pull
+- Config: interval, startup delay, enable/disable, optional status notify
