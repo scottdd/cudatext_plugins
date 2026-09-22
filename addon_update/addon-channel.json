@@ -4,11 +4,5 @@
     "desc": "Auto-check and silently update installed CudaText add-ons on startup and on a timer (default every 12 hours)",
     "module": "cuda_addon_update",
     "v": "0.1.0"
-  },
-  {
-    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-tabmenu-v0.6.3/plugin.Tab_Menu.zip",
-    "desc": "Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys",
-    "module": "cuda_tabmenu",
-    "v": "0.6.3"
   }
 ]
