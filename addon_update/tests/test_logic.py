@@ -2,6 +2,8 @@ import unittest
 import time
 
 from logic import (
+    config_with_hints,
+    CONFIG_HINTS,
     DEFAULT_CONFIG,
     merge_config,
     interval_elapsed,
@@ -92,3 +94,14 @@ class TestKinds(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestHints(unittest.TestCase):
+    def test_hints_written_and_ignored_on_load(self):
+        raw = config_with_hints(merge_config(None))
+        self.assertIn('enabled_Hint', raw)
+        self.assertTrue(raw['enabled_Hint'])
+        self.assertEqual(len(CONFIG_HINTS), len([k for k in raw if k.endswith('_Hint')]))
+        cfg = merge_config(raw)
+        self.assertNotIn('enabled_Hint', cfg)
+        self.assertTrue(cfg['enabled'])

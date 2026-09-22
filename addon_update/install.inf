@@ -1,6 +1,6 @@
 [info]
-version=0.1.0
-title=Addon Update
+version=0.1.1
+title=Addons Update
 desc=Auto-check and silently update installed CudaText add-ons on startup and on a timer (default every 12 hours)
 type=cudatext-plugin
 subdir=cuda_addon_update
@@ -13,21 +13,21 @@ events=on_start
 
 [item10]
 section=commands
-caption=Addon Update\Check now
+caption=Addons Update\Check now
 method=check_now
 
 [item11]
 section=commands
-caption=Addon Update\Config...
+caption=Addons Update\Config...
 method=config
 menu=op
 
 [item12]
 section=commands
-caption=Addon Update\Show last result
+caption=Addons Update\Show last result
 method=show_last_result
 
 [item13]
 section=commands
-caption=Addon Update\Reload config
+caption=Addons Update\Reload config
 method=reload_config

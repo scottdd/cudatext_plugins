@@ -1,5 +1,5 @@
-Plugin for CudaText: Addon Update (cuda_addon_update)
-Version 0.1.0
+Plugin for CudaText: Addons Update (cuda_addon_update)
+Version 0.1.1
 Author: Scott (https://github.com/scottdd)
 
 Automatically checks installed CudaText add-ons against Addon Manager
@@ -12,10 +12,10 @@ Behavior:
   - Skips preinstalled stock modules that Addon Manager treats as "preinstalled"
 
 Menus:
-  Plugins → Addon Update → Check now
-  Plugins → Addon Update → Show last result
-  Plugins → Addon Update → Reload config
-  Options → Settings-plugins → Addon Update → Config...
+  Plugins → Addons Update → Check now
+  Plugins → Addons Update → Show last result
+  Plugins → Addons Update → Reload config
+  Options → Settings-plugins → Addons Update → Config...
 
 Config file: settings/cuda_addon_update.json
   enabled            (bool, default true)
@@ -37,11 +37,11 @@ version bookkeeping (packages.ini). Network downloads for auto-update are
 quiet (no Retry/Abort dialogs); failures are logged to the console.
 
 Install on any machine (pick one):
-  1) Open plugin.Addon_Update.zip in CudaText (File → Open) and confirm install.
+  1) Open plugin.Addons_Update.zip in CudaText (File → Open) and confirm install.
      The zip is FLAT (install.inf at zip root). Do not wrap it in an extra folder.
   2) Addon Manager user channel:
      https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json
-     Then install "Addon Update" from that channel.
+     Then install "Addons Update" from that channel.
   3) Dev symlink (this monorepo only):
      ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addon_update
 

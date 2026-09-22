@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 STAGE="$(mktemp -d)"
 OUT="$ROOT/dist"
 # Addon Manager channel URLs must match: .../kind.Name.zip (see addon-channel.json)
-ZIP="$OUT/plugin.Addon_Update.zip"
+ZIP="$OUT/plugin.Addons_Update.zip"
 
 cleanup() { rm -rf "$STAGE"; }
 trap cleanup EXIT

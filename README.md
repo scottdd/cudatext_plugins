@@ -9,7 +9,7 @@ Each subdirectory is a standalone plugin with its own `install.inf`, `pack.sh`, 
 | Directory | Module (`py/…`) | Description |
 |-----------|-----------------|-------------|
 | [cuda-tabmenu](cuda-tabmenu/) | `cuda_tabmenu` | Tab menu: Info, Open Path, Non-ASCII tools |
-| [addon_update](addon_update/) | `cuda_addon_update` | Auto-update installed add-ons on startup / timer |
+| [addon_update](addon_update/) | `cuda_addon_update` | Addons Update: auto-update installed add-ons on startup / timer |
 
 ## Development install
 

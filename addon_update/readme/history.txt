@@ -1,3 +1,7 @@
+0.1.1 (2026-09-21)
+- Rename display title/menus to "Addons Update"
+- Config JSON writes <param>_Hint comments beside each setting
+
 0.1.0 (2026-09-21)
 - Initial release: check on startup (delayed) and every N hours (default 12)
 - Silently updates outdated installed plugins/linters/formatters/treehelpers

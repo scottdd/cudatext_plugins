@@ -9,7 +9,7 @@ import tempfile
 import time
 import traceback
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 from cudatext import *
 from cudax_lib import get_translation
@@ -143,7 +143,7 @@ class Command:
         return logic.merge_config(raw)
 
     def _write_config(self):
-        data = {k: self.cfg[k] for k in logic.DEFAULT_CONFIG}
+        data = logic.config_with_hints(self.cfg)
         with open(FN_CONFIG, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
             f.write('\n')
@@ -185,7 +185,7 @@ class Command:
         self.cfg = self._read_config()
         self._write_config()
         file_open(FN_CONFIG)
-        msg_status(_('Addon Update: edit JSON, save, then Plugins → Addon Update → Reload config'))
+        msg_status(_('Addons Update: edit JSON, save, then Plugins → Addons Update → Reload config'))
 
     def reload_config(self):
         self.cfg = self._read_config()
@@ -193,12 +193,12 @@ class Command:
         if self.cfg['enabled']:
             poll_ms = max(60_000, int(self.cfg['poll_minutes']) * 60_000)
             timer_proc(TIMER_START, TIMER_TICK, poll_ms)
-        msg_status(_('Addon Update: config reloaded (interval=%sh)') % self.cfg['interval_hours'])
+        msg_status(_('Addons Update: config reloaded (interval=%sh)') % self.cfg['interval_hours'])
 
     def _run_check(self, reason='interval', force=False):
         global _busy
         if _busy:
-            msg_status(_('Addon Update: already running'))
+            msg_status(_('Addons Update: already running'))
             return
         self.cfg = self._read_config()
         if not force and not self.cfg['enabled']:
@@ -222,11 +222,11 @@ class Command:
         self._write_config()
 
         if self.cfg.get('notify'):
-            msg_status(_('Addon Update: ') + summary)
+            msg_status(_('Addons Update: ') + summary)
         if self.cfg.get('notify_dialog') and (
             summary.startswith('updated:') or 'git pull:' in summary
         ):
-            msg_box(_('Addon Update') + '\n\n' + summary, MB_OK + MB_ICONINFO)
+            msg_box(_('Addons Update') + '\n\n' + summary, MB_OK + MB_ICONINFO)
         print('cuda_addon_update:', self.cfg['last_result'])
 
     def _do_updates(self) -> str:
@@ -275,7 +275,7 @@ class Command:
                 if m in logic.STD_MODULES:
                     continue
                 m_dir = os.path.join(DIR_PY, m)
-                msg_status(_('Addon Update: git pull %s') % m, True)
+                msg_status(_('Addons Update: git pull %s') % m, True)
                 try:
                     subprocess.call(['git', 'stash', 'save'], cwd=m_dir)
                     rc = subprocess.call(['git', 'pull'], cwd=m_dir)
@@ -292,7 +292,7 @@ class Command:
             name = a.get('name') or a.get('module') or '?'
             url = a.get('url') or ''
             msg_status(
-                _('Addon Update: ({}/{}) {}').format(idx + 1, total, name),
+                _('Addons Update: ({}/{}) {}').format(idx + 1, total, name),
                 True,
             )
             if not url:

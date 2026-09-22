@@ -1,11 +1,11 @@
-"""Pure helpers for Addon Update (testable without CudaText GUI)."""
+"""Pure helpers for Addons Update (testable without CudaText GUI)."""
 
 from __future__ import annotations
 
 import time
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 PREINST = 'preinstalled'
 
@@ -45,11 +45,33 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     'last_result': '',
 }
 
+# Sibling keys written into JSON as <param>_Hint (ignored when loading values).
+CONFIG_HINTS: Dict[str, str] = {
+    'enabled': 'Master switch for automatic checks',
+    'interval_hours': 'Hours between automatic update checks',
+    'check_on_startup': 'Run a check shortly after CudaText starts',
+    'startup_delay_sec': 'Seconds to wait after start before first check',
+    'poll_minutes': 'How often the idle timer wakes to see if interval elapsed',
+    'notify': 'Show a status-bar line after each check',
+    'notify_dialog': 'Pop a dialog when something was actually updated',
+    'update_plugins': 'Update installed plugins from channels',
+    'update_linters': 'Update installed linters',
+    'update_formatters': 'Update installed formatters',
+    'update_treehelpers': 'Update installed tree-helpers',
+    'update_lexers': 'Update installed lexers (off by default)',
+    'update_themes': 'Update installed themes (off by default)',
+    'update_translations': 'Update UI translations (off by default)',
+    'last_check_unix': 'Unix time of last completed check (auto-maintained)',
+    'last_result': 'Summary text from last check (auto-maintained)',
+}
+
 
 def merge_config(raw: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     cfg = dict(DEFAULT_CONFIG)
     if isinstance(raw, dict):
         for key, value in raw.items():
+            if key.endswith('_Hint'):
+                continue
             if key in cfg:
                 cfg[key] = value
     # coerce / clamp
@@ -203,3 +225,14 @@ def format_result_summary(
     if not parts:
         return 'No addon updates needed'
     return '; '.join(parts)
+
+
+def config_with_hints(cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Ordered config dict with <key>_Hint after each value for JSON comments."""
+    out: Dict[str, Any] = {}
+    for key in DEFAULT_CONFIG:
+        out[key] = cfg.get(key, DEFAULT_CONFIG[key])
+        hint = CONFIG_HINTS.get(key)
+        if hint:
+            out[f'{key}_Hint'] = hint
+    return out

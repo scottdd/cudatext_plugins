@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 PLUGIN_DIR = Path(__file__).resolve().parents[1]
-ZIP_PATH = PLUGIN_DIR / 'dist' / 'plugin.Addon_Update.zip'
+ZIP_PATH = PLUGIN_DIR / 'dist' / 'plugin.Addons_Update.zip'
 
 
 class PackScriptTests(unittest.TestCase):
@@ -38,11 +38,12 @@ class PackScriptTests(unittest.TestCase):
         self.assertNotIn('/tests/', listing)
         self.assertNotIn('pack.sh', listing)
 
-    def test_channel_url_kind_name_pattern(self):
+    def test_zip_and_release_meta_kind_name_pattern(self):
         # Addon Manager parses kind/name from .../(\w+)\.(.+?)\.zip
-        self.assertEqual(ZIP_PATH.name, 'plugin.Addon_Update.zip')
+        self.assertEqual(ZIP_PATH.name, 'plugin.Addons_Update.zip')
+        meta = (PLUGIN_DIR / 'release.json').read_text(encoding='utf-8')
+        self.assertIn('plugin.Addons_Update.zip', meta)
         channel = (PLUGIN_DIR / 'addon-channel.json').read_text(encoding='utf-8')
-        self.assertIn('plugin.Addon_Update.zip', channel)
         self.assertIn('"module": "cuda_addon_update"', channel)
 
 
