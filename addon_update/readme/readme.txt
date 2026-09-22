@@ -14,6 +14,7 @@ Behavior:
 Menus:
   Plugins → Addon Update → Check now
   Plugins → Addon Update → Show last result
+  Plugins → Addon Update → Reload config
   Options → Settings-plugins → Addon Update → Config...
 
 Config file: settings/cuda_addon_update.json
@@ -35,8 +36,20 @@ Requires the built-in Addons Manager (cuda_addonman) for channel lists and
 version bookkeeping (packages.ini). Network downloads for auto-update are
 quiet (no Retry/Abort dialogs); failures are logged to the console.
 
-Install: open plugin.Addon_Update.zip in CudaText, or:
-  ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addon_update
+Install on any machine (pick one):
+  1) Open plugin.Addon_Update.zip in CudaText (File → Open) and confirm install.
+     The zip is FLAT (install.inf at zip root). Do not wrap it in an extra folder.
+  2) Addon Manager user channel:
+     https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json
+     Then install "Addon Update" from that channel.
+  3) Dev symlink (this monorepo only):
+     ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addon_update
+
+Do NOT use Addon Manager "Install from GitHub" on the monorepo root URL — the
+repo name does not match subdir=cuda_addon_update (same limitation as Tab Menu).
+
+After install, restart CudaText or use Plugins → Reload plugins. Target folder
+must be py/cuda_addon_update/ (underscore), matching install.inf subdir=.
 
 Homepage: https://github.com/scottdd/cudatext_plugins/tree/main/addon_update
 License: MPL 2.0
