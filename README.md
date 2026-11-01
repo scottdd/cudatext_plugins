@@ -1,8 +1,42 @@
 # cudatext_plugins
 
-Monorepo of independent [CudaText](https://cudatext.github.io/) plugins by [scottdd](https://github.com/scottdd).
+Independent [CudaText](https://cudatext.github.io/) plugins by [scottdd](https://github.com/scottdd).
 
-Each subdirectory is a standalone plugin with its own `install.inf`, `pack.sh`, and `readme/`.
+## 🚀 Quick install (one line!)
+
+> [!TIP]
+> **Get every plugin here in CudaText's Addon Manager by adding one URL:**
+>
+> 1. In CudaText open **Plugins → Addon Manager → Config**.
+> 2. In **User channels**, add this line:
+>
+>    ```
+>    https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json
+>    ```
+>
+> 3. Click OK, then **Plugins → Addon Manager → Install** and pick the plugins you want. ✅
+
+> [!WARNING]
+> ⚠️ **Only add channels you trust.** Adding a user channel lets CudaText download and run Python code from this repository with **your user permissions**. Future updates also come from this channel. The code is provided **as-is, with no warranty** ([MPL-2.0](https://www.mozilla.org/MPL/2.0/)). Please review the [source](https://github.com/scottdd/cudatext_plugins) and [releases](https://github.com/scottdd/cudatext_plugins/releases) before installing.
+
+### 📦 Manual install (no channel)
+
+1. Download `plugin.<Name>.zip` from [GitHub Releases](https://github.com/scottdd/cudatext_plugins/releases).
+2. Either open the zip in CudaText (**File → Open**) and confirm the installer prompt, **or** extract it into your CudaText `py` folder:
+
+| Platform | `py` folder | Python |
+|----------|-------------|--------|
+| 🪟 Windows | `%AppData%\CudaText\py\` | Bundled with CudaText |
+| 🍎 macOS | `~/Library/Application Support/CudaText/py/` | Install Python 3 |
+| 🐧 Linux | `~/.config/cudatext/py/` | Install Python 3 |
+| 💼 Portable | `<CudaText exe folder>/py/` | Same as platform |
+
+3. Restart CudaText.
+
+> [!IMPORTANT]
+> On macOS and Linux CudaText needs a system Python 3 to run plugins. Windows builds include it.
+
+---
 
 ## Plugins
 
@@ -11,7 +45,11 @@ Each subdirectory is a standalone plugin with its own `install.inf`, `pack.sh`, 
 | [cuda-tabmenu](cuda-tabmenu/) | `cuda_tabmenu` | Tab menu: Info, Open Path, Non-ASCII tools |
 | [addon_update](addon_update/) | `cuda_addon_update` | Addons Update: auto-update installed add-ons on startup / timer |
 
-## Development install
+## 🛠️ For developers
+
+Each subdirectory is a standalone plugin with its own `install.inf`, `pack.sh`, and `readme/`.
+
+### Development install
 
 Clone this repo, then symlink a plugin folder into CudaText's `py` directory. The install folder name uses an **underscore** (`subdir=` in `install.inf`), while repo folders use a **hyphen**:
 
