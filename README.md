@@ -7,14 +7,14 @@ Independent [CudaText](https://cudatext.github.io/) plugins by [scottdd](https:/
 > [!TIP]
 > **Get every plugin here in CudaText's Addon Manager by adding one URL:**
 >
-> 1. In CudaText open **Plugins → Addon Manager → Config**.
-> 2. In **User channels**, add this line:
+> 1. In CudaText open **Options → Settings-plugins → Addons Manager → Config...**
+> 2. In the **User channels:** box, add this line:
 >
 >    ```
 >    https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json
 >    ```
 >
-> 3. Click OK, then **Plugins → Addon Manager → Install** and pick the plugins you want. ✅
+> 3. Click OK, then **Plugins → Addons Manager → Install...** and pick the plugins you want. ✅
 
 > [!WARNING]
 > ⚠️ **Only add channels you trust.** Adding a user channel lets CudaText download and run Python code from this repository with **your user permissions**. Future updates also come from this channel. The code is provided **as-is, with no warranty** ([MPL-2.0](https://www.mozilla.org/MPL/2.0/)). Please review the [source](https://github.com/scottdd/cudatext_plugins) and [releases](https://github.com/scottdd/cudatext_plugins/releases) before installing.
@@ -22,14 +22,14 @@ Independent [CudaText](https://cudatext.github.io/) plugins by [scottdd](https:/
 ### 📦 Manual install (no channel)
 
 1. Download `plugin.<Name>.zip` from [GitHub Releases](https://github.com/scottdd/cudatext_plugins/releases).
-2. Either open the zip in CudaText (**File → Open**) and confirm the installer prompt, **or** extract it into your CudaText `py` folder:
+2. Either open the zip in CudaText (**File → Open**); CudaText will offer to install it, so confirm, **or** extract it into your CudaText `py` folder:
 
 | Platform | `py` folder | Python |
 |----------|-------------|--------|
-| 🪟 Windows | `%AppData%\CudaText\py\` | Bundled with CudaText |
+| 🪟 Windows | `<folder containing cudatext.exe>\py\` (Windows builds are portable) | Bundled with CudaText |
 | 🍎 macOS | `~/Library/Application Support/CudaText/py/` | Install Python 3 |
-| 🐧 Linux | `~/.config/cudatext/py/` | Install Python 3 |
-| 💼 Portable | `<CudaText exe folder>/py/` | Same as platform |
+| 🐧 Linux | `~/.config/cudatext/py/` (or `$XDG_CONFIG_HOME/cudatext/py/`) | Install Python 3 |
+| 💼 Portable (.xz archives, any exe next to a `data/` folder) | `<CudaText exe folder>/py/` | Same as platform |
 
 3. Restart CudaText.
 
@@ -92,7 +92,7 @@ Dry run: `./release.sh cuda-tabmenu --dry-run`
 Skip git push: `--no-git`  
 Skip GitHub upload: `--no-github`
 
-Users add the raw channel URL in **Plugins → Addon Manager → Config → User channels**:
+Users add the raw channel URL in **Options → Settings-plugins → Addons Manager → Config... → User channels:**:
 
 `https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json`
 
