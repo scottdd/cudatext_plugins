@@ -5,6 +5,21 @@ Author: Scott (https://github.com/scottdd)
 Automatically checks installed CudaText add-ons against Addon Manager
 channels and applies updates without the Update checklist dialog.
 
+QUICK INSTALL
+  Options → Settings-plugins → Addons Manager → Config...
+  User channels: add this line:
+
+    https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json
+
+  Then Plugins → Addons Manager → Install... and choose Addons Update.
+
+TRUST
+  Only add channels you trust. A user channel lets CudaText download and
+  run Python from that repository with your user permissions. Future
+  updates come from the same channel. The code is provided as-is, with
+  no warranty (MPL-2.0). Please review the source and releases first:
+    https://github.com/scottdd/cudatext_plugins
+
 Behavior:
   - On editor start (after a short delay), then every N hours (default 12)
   - Zip-installed add-ons: download + silent install (same path as Addon Manager)
@@ -36,20 +51,34 @@ Requires the built-in Addons Manager (cuda_addonman) for channel lists and
 version bookkeeping (packages.ini). Network downloads for auto-update are
 quiet (no Retry/Abort dialogs); failures are logged to the console.
 
-Install on any machine (pick one):
-  1) Open plugin.Addons_Update.zip in CudaText (File → Open) and confirm install.
-     The zip is FLAT (install.inf at zip root). Do not wrap it in an extra folder.
-  2) Addon Manager user channel:
-     https://raw.githubusercontent.com/scottdd/cudatext_plugins/main/addons/scottdd-plugins.json
-     Then install "Addons Update" from that channel.
-  3) Dev symlink (this monorepo only):
-     ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addon_update
+MANUAL INSTALL
+  1. Download plugin.Addons_Update.zip from GitHub Releases, or build it
+     with ./pack.sh (output: dist/plugin.Addons_Update.zip).
+  2. In CudaText choose File → Open, open the zip, and confirm install.
+     The zip is FLAT (install.inf at the zip root). If you unzip by hand,
+     put the files in py/cuda_addon_update/ so install.inf sits directly in
+     that folder. Do not wrap the zip in an extra folder, and do not dump
+     the files loose into py/.
+  3. Restart CudaText, or use Plugins → Reload plugins.
 
-Do NOT use Addon Manager "Install from GitHub" on the monorepo root URL — the
-repo name does not match subdir=cuda_addon_update (same limitation as Tab Menu).
+  py folder (the install.inf "subdir" is cuda_addon_update):
 
-After install, restart CudaText or use Plugins → Reload plugins. Target folder
-must be py/cuda_addon_update/ (underscore), matching install.inf subdir=.
+    Windows   <folder containing cudatext.exe>\py\
+              Windows builds are portable. This is NOT %APPDATA%.
+    macOS     ~/Library/Application Support/CudaText/py/
+    Linux     ~/.config/cudatext/py/
+              or $XDG_CONFIG_HOME/cudatext/py/
+    Portable  <CudaText exe folder>/py/
+              (.xz archives, or any exe next to a data/ folder)
+
+  macOS and Linux need a system Python 3. Windows builds include Python.
+
+Dev symlink (this monorepo only):
+
+  ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addon_update
+
+Do NOT use Addon Manager "Install from GitHub" on the monorepo root URL.
+The repo name does not match subdir=cuda_addon_update.
 
 Homepage: https://github.com/scottdd/cudatext_plugins/tree/main/addon_update
 License: MPL 2.0

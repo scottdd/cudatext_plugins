@@ -1,0 +1,8 @@
+0.1.0 (2026-11-23)
+initial release, extracted from Tab Menu 0.6.3
+Plugins → ASCII Tools and Search → ASCII Tools
+highlight / un-highlight non-ASCII (refreshed on edit)
+next / previous non-ASCII (Alt+F3, Alt+Shift+F3) honor Find wrapped search
+transliterate, strip, and normalize punctuation (selection, or the whole document after confirm)
+list non-ASCII characters with line, column, code point, and Unicode name
+vendored AnyAscii (ISC) for transliteration

@@ -1,7 +1,7 @@
 [info]
-version=0.6.3
+version=0.7.0
 title=Tab Menu
-desc=Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys
+desc=Tab context menu: file info, reveal, folder, terminal, reload, save copy, duplicate, delete, HTML export
 type=cudatext-plugin
 subdir=cuda_tabmenu
 homepage=https://github.com/scottdd/cudatext_plugins/tree/main/cuda-tabmenu
@@ -9,37 +9,50 @@ api=1.0.300
 
 [item1]
 section=events
-events=on_start,on_tab_menu,on_init_plugins_menu,on_change_slow
+events=on_start,on_tab_menu
 
 [item10]
 section=commands
-caption=Tab Menu\&Info
+caption=Tab Menu\File &Info...
 hotkey=Ctrl+Shift+Alt+I
-method=search_info
+method=cmd_file_info
 
 [item11]
 section=commands
-caption=Tab Menu\&Non-ASCII\&Highlight Non-ASCII
-method=search_highlight_nonascii
+caption=Tab Menu\&Reveal in File Manager
+method=cmd_reveal
 
 [item12]
 section=commands
-caption=Tab Menu\&Non-ASCII\&Un-highlight Non-ASCII
-method=search_unhighlight_nonascii
+caption=Tab Menu\Open &Folder
+method=cmd_open_folder
 
 [item13]
 section=commands
-caption=Tab Menu\&Non-ASCII\&Next Non-ASCII Character
-hotkey=Alt+F3
-method=search_next_nonascii
+caption=Tab Menu\Open &Terminal Here
+method=cmd_open_terminal
 
 [item14]
 section=commands
-caption=Tab Menu\&Non-ASCII\&Previous Non-ASCII Character
-hotkey=Alt+Shift+F3
-method=search_prev_nonascii
+caption=Tab Menu\Reo&pen / Reload from Disk
+method=cmd_reload
 
 [item15]
 section=commands
-caption=Tab Menu\&Non-ASCII\&Transliterate to ASCII
-method=search_transliterate_ascii
+caption=Tab Menu\&Save a Copy As...
+method=cmd_save_copy
+
+[item16]
+section=commands
+caption=Tab Menu\D&uplicate File
+method=cmd_duplicate
+
+[item17]
+section=commands
+caption=Tab Menu\Close and &Delete File...
+method=cmd_close_delete
+
+[item18]
+section=commands
+caption=Tab Menu\&Export to HTML...
+method=cmd_export_html
