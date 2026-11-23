@@ -1,150 +1,77 @@
 import os
+import shutil
 import subprocess
 import sys
 import traceback
 
-__version__ = '0.6.3'
+__version__ = '0.7.0'
 
 from cudatext import *
+from cudatext_cmd import cmd_FileClose, cmd_FileExportHtml, cmd_FileReopen
 from cudax_lib import get_translation
 
-from .anyascii import anyascii as transliterate_to_ascii
 from .logic import (
-    collect_nonascii_positions,
+    FileOpError,
+    available_attempts,
+    clean_duplicate_basename,
+    count_characters,
     count_words,
-    find_next_nonascii,
-    find_prev_nonascii,
-    finder_wrap_enabled,
+    encode_document,
+    first_path,
+    format_file_info,
+    format_line_endings,
     format_size,
+    format_status,
+    format_timestamp,
+    open_folder_attempts,
+    platform_from_suffix,
+    prepare_destination,
+    reveal_attempts,
+    safe_copy_file,
+    safe_delete_file,
+    safe_write_bytes,
+    suggest_duplicate_name,
+    terminal_attempts,
 )
 
 _ = get_translation(__file__)
 
-CAP_INFO = _('Info')
-CAP_OPEN_PATH = _('Open Path')
-CAP_UNSAVED = _('(unsaved)')
+CAP_FILE_INFO = _('File &Info...')
+CAP_REVEAL = _('&Reveal in File Manager')
+CAP_OPEN_FOLDER = _('Open &Folder')
+CAP_TERMINAL = _('Open &Terminal Here')
+CAP_RELOAD = _('Reo&pen / Reload from Disk')
+CAP_SAVE_COPY = _('&Save a Copy As...')
+CAP_DUPLICATE = _('D&uplicate File')
+CAP_DELETE = _('Close and &Delete File...')
+CAP_EXPORT = _('&Export to HTML...')
+CAP_DIALOG = _('File Info')
 CAP_NONE = _('(none)')
-CAP_DIALOG = _('Tab Info')
-STATUS_UNSAVED = _('unsaved')
-STATUS_SAVED = _('saved')
-STATUS_MODIFIED = _('modified')
+CAP_UNSAVED = _('(unsaved)')
 
-CAP_NONASCII = _('Non-ASCII')
-CAP_HIGHLIGHT_NONASCII = _('Highlight Non-ASCII')
-CAP_UNHIGHLIGHT_NONASCII = _('Un-highlight Non-ASCII')
-CAP_NEXT_NONASCII = _('Next Non-ASCII Character')
-CAP_PREV_NONASCII = _('Previous Non-ASCII Character')
-CAP_TRANSLITERATE_ASCII = _('Transliterate to ASCII')
+TAG_PREFIX = 'cuda_tabmenu_item_'
 
-NONASCII_MARK_TAG = 88001
-NONASCII_HIGHLIGHT_STYLE = dict(
-    color_bg='#FFE8A0',
-    border_down=4,
-)
-SEARCH_MENU_TAG = 'cuda_tabmenu_search'
-
-OS_SUFFIX = app_proc(PROC_GET_OS_SUFFIX, '')
+OS_PLATFORM = platform_from_suffix(app_proc(PROC_GET_OS_SUFFIX, ''))
 
 
 def is_saved_file(filepath):
     return bool(filepath) and os.path.isfile(filepath)
 
 
-def is_text_document(ed):
-    return ed.get_prop(PROP_KIND) == 'text'
-
-
-def get_file_status(ed):
-    if not is_saved_file(ed.get_filename()):
-        return STATUS_UNSAVED
-    if ed.get_prop(PROP_MODIFIED):
-        return STATUS_MODIFIED
-    return STATUS_SAVED
-
-
-def get_encoding(ed):
-    enc = ed.get_prop(PROP_ENC)
-    return enc if enc else CAP_NONE
-
-
-def get_lexer(ed):
-    lex = ed.get_prop(PROP_LEXER_FILE)
-    if not lex:
-        return CAP_NONE
-    if lex.endswith(' ^'):
-        lex = lex[:-2]
-    return lex
-
-
-def editor_lines(ed):
-    return [ed.get_text_line(i) for i in range(ed.get_line_count())]
-
-
-def editor_handle(ed):
-    return ed.get_prop(PROP_HANDLE_SELF)
-
-
-def highlight_is_present(ed):
-    marks = ed.attr(MARKERS_GET_DICT) or []
-    for mark in marks:
-        if isinstance(mark, dict) and mark.get('tag') == NONASCII_MARK_TAG:
-            return True
-    return False
-
-
-def highlight_nonascii(ed):
-    ed.attr(MARKERS_DELETE_BY_TAG, NONASCII_MARK_TAG)
-    xs, ys, lens = collect_nonascii_positions(editor_lines(ed))
-    if xs:
-        ed.attr(MARKERS_ADD_MANY, NONASCII_MARK_TAG, xs, ys, lens, **NONASCII_HIGHLIGHT_STYLE)
-    return len(xs)
-
-
-def unhighlight_nonascii(ed):
-    ed.attr(MARKERS_DELETE_BY_TAG, NONASCII_MARK_TAG)
-
-
-def goto_nonascii(ed, pos):
-    if pos is None:
-        return False
-    col, row = pos
-    ed.set_caret(col, row, col + 1, row)
-    ed.focus()
-    return True
-
-
-def get_finder_wrap():
-    try:
-        prop = app_proc(PROC_GET_FINDER_PROP, '')
-    except Exception:
-        return False
-    return finder_wrap_enabled(prop)
-
-
-def open_folder(folder):
-    if not folder or not os.path.isdir(folder):
-        msg_status(_('Folder not found: {}').format(folder))
-        return
-
-    try:
-        if OS_SUFFIX == '':
-            subprocess.Popen(['explorer', folder])
-        elif OS_SUFFIX == '__mac':
-            subprocess.Popen(['open', folder])
-        elif OS_SUFFIX == '__haiku':
-            msg_status(_('Open Path is not implemented for Haiku'))
-        else:
-            subprocess.Popen(['xdg-open', folder])
-    except Exception as ex:
-        msg_status(_('Error opening folder: {}').format(ex))
+def is_text_document(editor):
+    return editor.get_prop(PROP_KIND) == 'text'
 
 
 def _log_error(where):
-    # print() goes to CudaText Console; traceback.print_exc() goes to stderr
-    # and is often invisible there.
+    # print() goes to the CudaText Console. traceback.print_exc() goes to
+    # stderr, which the Console does not show.
     print('cuda_tabmenu error in %s:\n%s' % (where, traceback.format_exc()))
     sys.stdout.flush()
     msg_status(_('Tab Menu error; see Console'))
+
+
+def _program_exists(name):
+    return shutil.which(name) is not None
 
 
 print('cuda_tabmenu module imported, version %s' % __version__)
@@ -155,15 +82,12 @@ class Command:
 
     def __init__(self):
         self._tab_ed = None
-        self._highlighted = set()
         self._tab_menu_handle = None
-        print('Tab Menu Command() created, version %s' % __version__)
-        sys.stdout.flush()
+        self._dialog_text = ''
 
     def on_start(self, ed_self):
         print('Tab Menu %s loaded' % __version__)
         sys.stdout.flush()
-        msg_status('Tab Menu %s loaded' % __version__)
 
     def _tab_root(self):
         # String id 'tab' calls InitPopupTab on every menu_proc access and
@@ -181,332 +105,375 @@ class Command:
     def _current_ed(self, prefer_tab=False):
         if prefer_tab and self._tab_ed is not None:
             return self._tab_ed
-        try:
-            if prefer_tab:
-                clicked = Editor(1)
-                if clicked is not None:
-                    return clicked
-        except Exception:
-            pass
         return ed
+
+    def _clear_our_items(self, menu_id):
+        items = menu_proc(menu_id, MENU_ENUM) or []
+        ids = []
+        for item in items:
+            tag = item.get('tag')
+            if isinstance(tag, str) and tag.startswith(TAG_PREFIX):
+                ids.append(item['id'])
+        for item_id in ids:
+            menu_proc(item_id, MENU_REMOVE)
+
+    def _add_item(self, parent_id, key, caption, command, enabled):
+        item_id = menu_proc(
+            parent_id,
+            MENU_ADD,
+            caption=caption,
+            command=command,
+            tag=TAG_PREFIX + key,
+        )
+        if item_id and not enabled:
+            menu_proc(item_id, MENU_SET_ENABLED, command=False)
+        return item_id
 
     def on_tab_menu(self, ed_self):
         try:
             self._tab_ed = ed_self
             tab_id = self._tab_root()
-            can_open_path = is_saved_file(ed_self.get_filename())
-            self._set_menu_item(tab_id, CAP_INFO, self.menu_info, True)
-            self._set_menu_item(tab_id, CAP_OPEN_PATH, self.menu_open_path, can_open_path)
-            self._set_nonascii_submenu(tab_id, 'menu', is_text_document(ed_self))
+            saved = is_saved_file(ed_self.get_filename())
+            text_doc = is_text_document(ed_self)
+            self._clear_our_items(tab_id)
+            menu_proc(tab_id, MENU_ADD, caption='-', tag=TAG_PREFIX + 'sep')
+            self._add_item(tab_id, 'info', CAP_FILE_INFO, self.menu_file_info, True)
+            self._add_item(tab_id, 'reveal', CAP_REVEAL, self.menu_reveal, saved)
+            self._add_item(tab_id, 'folder', CAP_OPEN_FOLDER, self.menu_open_folder, saved)
+            self._add_item(tab_id, 'terminal', CAP_TERMINAL, self.menu_terminal, saved)
+            self._add_item(tab_id, 'reload', CAP_RELOAD, self.menu_reload, saved)
+            self._add_item(tab_id, 'savecopy', CAP_SAVE_COPY, self.menu_save_copy, True)
+            self._add_item(tab_id, 'duplicate', CAP_DUPLICATE, self.menu_duplicate, saved)
+            self._add_item(tab_id, 'delete', CAP_DELETE, self.menu_close_delete, saved)
+            self._add_item(tab_id, 'html', CAP_EXPORT, self.menu_export_html, text_doc)
         except Exception:
             _log_error('on_tab_menu')
 
-    def on_init_plugins_menu(self, ed_self):
-        try:
-            self._install_search_menu()
-        except Exception:
-            _log_error('on_init_plugins_menu')
-
-    def on_change_slow(self, ed_self):
-        try:
-            if not self._is_highlight_active(ed_self):
-                return
-            if not is_text_document(ed_self):
-                self._clear_highlight(ed_self)
-                return
-            highlight_nonascii(ed_self)
-        except Exception:
-            _log_error('on_change_slow')
-
-    def _mark_highlighted(self, ed, active):
-        handle = editor_handle(ed)
-        if active:
-            self._highlighted.add(handle)
-        else:
-            self._highlighted.discard(handle)
-
-    def _is_highlight_active(self, ed):
-        handle = editor_handle(ed)
-        if handle in self._highlighted:
-            return True
-        if highlight_is_present(ed):
-            self._highlighted.add(handle)
-            return True
-        return False
-
-    def _clear_highlight(self, ed):
-        unhighlight_nonascii(ed)
-        self._mark_highlighted(ed, False)
-
-    def _install_search_menu(self):
-        items = menu_proc('top-sr', MENU_ENUM) or []
-        existing = [item for item in items if item.get('tag') == SEARCH_MENU_TAG]
-        if existing:
-            parent_id = existing[0]['id']
-            menu_proc(parent_id, MENU_CLEAR)
-            self._fill_nonascii_submenu(parent_id, 'search')
-            return
-        menu_proc('top-sr', MENU_ADD, caption='-', tag=SEARCH_MENU_TAG + '_sep')
-        parent_id = menu_proc('top-sr', MENU_ADD, caption=CAP_NONASCII, tag=SEARCH_MENU_TAG)
-        self._fill_nonascii_submenu(parent_id, 'search')
-
-    def _remove_menu_item(self, menu_id, caption):
-        for item in menu_proc(menu_id, MENU_ENUM) or []:
-            if item.get('cap') == caption:
-                menu_proc(item['id'], MENU_REMOVE)
-                return True
-        return False
-
-    def _add_menu_item(self, parent_id, caption, command, enabled=True):
-        item_id = menu_proc(parent_id, MENU_ADD, caption=caption, command=command)
-        if not enabled and item_id:
-            menu_proc(item_id, MENU_SET_ENABLED, command=False)
-        return item_id
-
-    def _set_menu_item(self, parent_id, caption, command, enabled):
-        self._remove_menu_item(parent_id, caption)
-        self._add_menu_item(parent_id, caption, command, enabled)
-
-    def _add_nonascii_submenu(self, parent_id, cmd_prefix, enabled):
-        sub_id = menu_proc(parent_id, MENU_ADD, caption=CAP_NONASCII)
-        if not enabled:
-            menu_proc(sub_id, MENU_SET_ENABLED, command=False)
-        self._fill_nonascii_submenu(sub_id, cmd_prefix, enabled)
-
-    def _set_nonascii_submenu(self, parent_id, cmd_prefix, enabled):
-        self._remove_menu_item(parent_id, CAP_NONASCII)
-        self._add_nonascii_submenu(parent_id, cmd_prefix, enabled)
-
-    def _nonascii_commands(self, cmd_prefix):
-        if cmd_prefix == 'menu':
-            return [
-                (CAP_HIGHLIGHT_NONASCII, self.menu_highlight_nonascii),
-                (CAP_UNHIGHLIGHT_NONASCII, self.menu_unhighlight_nonascii),
-                ('-', None),
-                (CAP_NEXT_NONASCII, self.menu_next_nonascii),
-                (CAP_PREV_NONASCII, self.menu_prev_nonascii),
-                ('-', None),
-                (CAP_TRANSLITERATE_ASCII, self.menu_transliterate_ascii),
-            ]
-        return [
-            (CAP_HIGHLIGHT_NONASCII, self.search_highlight_nonascii),
-            (CAP_UNHIGHLIGHT_NONASCII, self.search_unhighlight_nonascii),
-            ('-', None),
-            (CAP_NEXT_NONASCII, self.search_next_nonascii),
-            (CAP_PREV_NONASCII, self.search_prev_nonascii),
-            ('-', None),
-            (CAP_TRANSLITERATE_ASCII, self.search_transliterate_ascii),
-        ]
-
-    def _fill_nonascii_submenu(self, parent_id, cmd_prefix, enabled=True):
-        for caption, command in self._nonascii_commands(cmd_prefix):
-            if caption == '-':
-                menu_proc(parent_id, MENU_ADD, caption='-')
-                continue
-            self._add_menu_item(parent_id, caption, command, enabled)
-
-    def menu_info(self, info=''):
-        try:
-            self._show_info_dialog(self._current_ed(prefer_tab=True))
-        except Exception:
-            _log_error('menu_info')
-
-    def search_info(self, info=''):
-        try:
-            msg_status(_('Tab Menu: Info'))
-            self._show_info_dialog(self._current_ed())
-        except Exception:
-            _log_error('search_info')
-
-    def menu_open_path(self, info=''):
-        try:
-            ed_tab = self._current_ed(prefer_tab=True)
-            filepath = ed_tab.get_filename()
-            if not is_saved_file(filepath):
-                return
-            open_folder(os.path.dirname(os.path.abspath(filepath)))
-        except Exception:
-            _log_error('menu_open_path')
-
-    def _ed_text(self, ed):
-        if ed is None or not is_text_document(ed):
+    def _require_saved(self, editor):
+        path = editor.get_filename()
+        if not is_saved_file(path):
+            msg_status(_('Unsaved tab has no file on disk'))
             return None
-        return ed
+        return os.path.abspath(path)
 
-    def _do_highlight_nonascii(self, ed):
+    def _run_popen(self, attempt):
+        kwargs = {}
+        if attempt.get('cwd'):
+            kwargs['cwd'] = attempt['cwd']
+        subprocess.Popen(attempt['argv'], **kwargs)
+
+    def _run_first(self, attempts, failure_message):
+        chosen = available_attempts(attempts, _program_exists)
+        if not chosen:
+            msg_status(failure_message)
+            return False
+        attempt = chosen[0]
         try:
-            ed = self._ed_text(ed)
-            if ed is None:
-                msg_status(_('Not a text document'))
-                return
-            count = highlight_nonascii(ed)
-            self._mark_highlighted(ed, True)
-            msg_status(_('Highlighted {} non-ASCII character(s)').format(count))
-        except Exception:
-            _log_error('highlight_nonascii')
+            self._run_popen(attempt)
+        except Exception as ex:
+            msg_status(failure_message + ': ' + str(ex))
+            return False
+        return True
 
-    def _do_unhighlight_nonascii(self, ed):
+    def _run_until_ok(self, attempts, failure_message):
+        chosen = available_attempts(attempts, _program_exists)
+        if not chosen:
+            msg_status(failure_message)
+            return False
+        errors = []
+        for attempt in chosen:
+            try:
+                if attempt.get('wait'):
+                    proc = subprocess.run(
+                        attempt['argv'],
+                        cwd=attempt.get('cwd') or None,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=8,
+                    )
+                    if proc.returncode == 0:
+                        return True
+                    err = (proc.stderr or b'').decode('utf-8', 'replace').strip()
+                    if err:
+                        errors.append(err.splitlines()[-1][:200])
+                    continue
+                self._run_popen(attempt)
+                return True
+            except Exception as ex:
+                errors.append(str(ex))
+        detail = errors[-1] if errors else failure_message
+        msg_status(detail)
+        return False
+
+    def _reveal(self, editor):
         try:
-            ed = self._ed_text(ed)
-            if ed is None:
-                msg_status(_('Not a text document'))
+            path = self._require_saved(editor)
+            if not path:
                 return
-            self._clear_highlight(ed)
-            msg_status(_('Non-ASCII highlights removed'))
+            attempts = reveal_attempts(OS_PLATFORM, path)
+            if not attempts:
+                msg_status(_('Reveal in File Manager is not implemented for this OS'))
+                return
+            self._run_until_ok(attempts, _('Could not reveal the file'))
         except Exception:
-            _log_error('unhighlight_nonascii')
+            _log_error('reveal')
 
-    def _goto_found_nonascii(self, ed, result):
-        if result is None:
-            msg_status(_('No more non-ASCII characters'))
-            return
-        col, row, wrapped = result
-        goto_nonascii(ed, (col, row))
-        if wrapped:
-            msg_status(_('Wrapped search'))
-
-    def _do_next_nonascii(self, ed):
+    def _open_folder(self, editor):
         try:
-            ed = self._ed_text(ed)
-            if ed is None:
-                msg_status(_('Not a text document'))
+            path = self._require_saved(editor)
+            if not path:
                 return
-            x, y, x1, y1 = ed.get_carets()[0]
-            self._goto_found_nonascii(
-                ed,
-                find_next_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
-            )
+            folder = os.path.dirname(path)
+            if not os.path.isdir(folder):
+                msg_status(_('Folder not found: {}').format(folder))
+                return
+            attempts = open_folder_attempts(OS_PLATFORM, folder)
+            if not attempts:
+                msg_status(_('Open Folder is not implemented for this OS'))
+                return
+            self._run_first(attempts, _('Could not open the folder'))
         except Exception:
-            _log_error('next_nonascii')
+            _log_error('open_folder')
 
-    def _do_prev_nonascii(self, ed):
+    def _open_terminal(self, editor):
         try:
-            ed = self._ed_text(ed)
-            if ed is None:
-                msg_status(_('Not a text document'))
+            path = self._require_saved(editor)
+            if not path:
                 return
-            x, y, x1, y1 = ed.get_carets()[0]
-            self._goto_found_nonascii(
-                ed,
-                find_prev_nonascii(editor_lines(ed), x, y, wrap=get_finder_wrap()),
-            )
+            folder = os.path.dirname(path)
+            if not os.path.isdir(folder):
+                msg_status(_('Folder not found: {}').format(folder))
+                return
+            attempts = terminal_attempts(OS_PLATFORM, folder)
+            if not attempts:
+                msg_status(_('Open Terminal Here is not implemented for this OS'))
+                return
+            self._run_first(attempts, _('Could not open a terminal'))
         except Exception:
-            _log_error('prev_nonascii')
+            _log_error('open_terminal')
 
-    def menu_highlight_nonascii(self, info=''):
-        self._do_highlight_nonascii(self._current_ed(prefer_tab=True))
-
-    def menu_unhighlight_nonascii(self, info=''):
-        self._do_unhighlight_nonascii(self._current_ed(prefer_tab=True))
-
-    def menu_next_nonascii(self, info=''):
-        self._do_next_nonascii(self._current_ed(prefer_tab=True))
-
-    def menu_prev_nonascii(self, info=''):
-        self._do_prev_nonascii(self._current_ed(prefer_tab=True))
-
-    def search_highlight_nonascii(self, info=''):
-        self._do_highlight_nonascii(self._current_ed())
-
-    def search_unhighlight_nonascii(self, info=''):
-        self._do_unhighlight_nonascii(self._current_ed())
-
-    def search_next_nonascii(self, info=''):
-        self._do_next_nonascii(self._current_ed())
-
-    def search_prev_nonascii(self, info=''):
-        self._do_prev_nonascii(self._current_ed())
-
-    def _do_transliterate_ascii(self, ed):
+    def _reload(self, editor):
         try:
-            ed = self._ed_text(ed)
-            if ed is None:
-                msg_status(_('Not a text document'))
+            path = self._require_saved(editor)
+            if not path:
                 return
-            if msg_box(
-                _('Transliterate all non-ASCII characters to ASCII in this document?'),
-                MB_OKCANCEL + MB_ICONQUESTION,
-            ) != ID_OK:
-                return
-
-            text = ed.get_text_all()
-            new_text = transliterate_to_ascii(text)
-            if new_text == text:
-                msg_status(_('No non-ASCII characters found'))
-                return
-
-            keep_highlight = self._is_highlight_active(ed)
-            ed.set_text_all(new_text)
-            if keep_highlight:
-                highlight_nonascii(ed)
-                self._mark_highlighted(ed, True)
-            msg_status(_('Transliterated to ASCII'))
+            try:
+                editor.focus()
+            except Exception:
+                pass
+            editor.cmd(cmd_FileReopen)
         except Exception:
-            _log_error('transliterate_ascii')
+            _log_error('reload')
 
-    def menu_transliterate_ascii(self, info=''):
-        self._do_transliterate_ascii(self._current_ed(prefer_tab=True))
+    def _initial_save_location(self, editor):
+        path = editor.get_filename()
+        if is_saved_file(path):
+            absolute = os.path.abspath(path)
+            return os.path.dirname(absolute), os.path.basename(absolute)
+        title = (editor.get_prop(PROP_TAB_TITLE) or '').lstrip('*').strip()
+        return os.path.expanduser('~'), title or 'untitled.txt'
 
-    def search_transliterate_ascii(self, info=''):
-        self._do_transliterate_ascii(self._current_ed())
-
-    def _build_info_text(self, ed):
-        filepath = ed.get_filename()
-        saved = is_saved_file(filepath)
-        modified = ed.get_prop(PROP_MODIFIED)
-
+    def _write_tab_copy(self, editor, dest, overwrite):
+        dest = prepare_destination(dest, overwrite=overwrite)
+        saved = None
+        try:
+            saved = editor.save(dest, True)
+        except TypeError:
+            saved = None
+        except Exception:
+            _log_error('editor.save copy')
+            saved = False
         if saved:
-            file_path = os.path.abspath(filepath)
+            return dest
+        if saved is None:
+            text = editor.get_text_all() or ''
+            encoding = editor.get_prop(PROP_ENC) or ''
+            newline = editor.get_prop(PROP_NEWLINE) or 'lf'
+            data = encode_document(text, encoding, newline=newline)
+            return safe_write_bytes(dest, data, overwrite=True)
+        raise FileOpError(_('Could not write {}').format(dest))
+
+    def _save_copy(self, editor):
+        try:
+            init_dir, init_name = self._initial_save_location(editor)
+            chosen = dlg_file(False, init_name, init_dir, _('All files|*.*'), _('Save a Copy As'))
+            dest = first_path(chosen)
+            if not dest:
+                return
+            current = editor.get_filename()
+            if current and os.path.normcase(os.path.abspath(current)) == os.path.normcase(os.path.abspath(dest)):
+                msg_status(_('That is this tab\'s file. Use Save to update it.'))
+                return
+            written = self._write_tab_copy(editor, dest, overwrite=True)
+            msg_status(_('Saved a copy to {}').format(written))
+        except FileOpError as ex:
+            msg_status(str(ex))
+        except Exception:
+            _log_error('save_copy')
+
+    def _duplicate(self, editor):
+        try:
+            path = self._require_saved(editor)
+            if not path:
+                return
+            folder = os.path.dirname(path)
+            base = os.path.basename(path)
+
+            def exists(name):
+                return os.path.exists(os.path.join(folder, name))
+
+            suggested = suggest_duplicate_name(base, exists)
+            entered = dlg_input(_('Duplicate file as (same folder):\n{}').format(folder), suggested)
+            if entered is None:
+                return
+            name = clean_duplicate_basename(entered)
+            dest = os.path.join(folder, name)
+            if os.path.normcase(os.path.abspath(dest)) == os.path.normcase(path):
+                msg_status(_('Choose a different file name'))
+                return
+            overwrite = False
+            if os.path.exists(dest):
+                if msg_box(
+                    _('Overwrite existing file?\n\n{}').format(dest),
+                    MB_OKCANCEL + MB_ICONWARNING,
+                ) != ID_OK:
+                    return
+                overwrite = True
+            modified = bool(editor.get_prop(PROP_MODIFIED))
+            if modified:
+                written = self._write_tab_copy(editor, dest, overwrite=overwrite)
+            else:
+                written = safe_copy_file(path, dest, overwrite=overwrite)
+            file_open(written)
+            msg_status(_('Opened duplicate {}').format(written))
+        except FileOpError as ex:
+            msg_status(str(ex))
+        except Exception:
+            _log_error('duplicate')
+
+    def _close_and_delete(self, editor):
+        try:
+            path = self._require_saved(editor)
+            if not path:
+                return
+            question = _('Close this tab and permanently delete this file from disk?\n\n{}').format(path)
+            if editor.get_prop(PROP_MODIFIED):
+                question += _('\n\nUnsaved changes in the tab will be discarded.')
+            if msg_box(question, MB_OKCANCEL + MB_ICONWARNING) != ID_OK:
+                return
+            if editor.get_prop(PROP_MODIFIED):
+                editor.set_prop(PROP_MODIFIED, False)
+            try:
+                editor.focus()
+            except Exception:
+                pass
+            editor.cmd(cmd_FileClose)
+            safe_delete_file(path)
+            msg_status(_('Deleted {}').format(path))
+        except FileOpError as ex:
+            msg_status(str(ex))
+        except Exception:
+            _log_error('close_delete')
+
+    def _export_html(self, editor):
+        try:
+            if not is_text_document(editor):
+                msg_status(_('Not a text document'))
+                return
+            try:
+                editor.focus()
+            except Exception:
+                pass
+            editor.cmd(cmd_FileExportHtml)
+        except Exception:
+            _log_error('export_html')
+
+    def _lexer_name(self, editor):
+        lex = editor.get_prop(PROP_LEXER_FILE)
+        if not lex:
+            return CAP_NONE
+        if lex.endswith(' ^'):
+            lex = lex[:-2]
+        return lex
+
+    def _build_info(self, editor):
+        path = editor.get_filename()
+        on_disk = is_saved_file(path)
+        modified = bool(editor.get_prop(PROP_MODIFIED))
+        try:
+            read_only = bool(editor.get_prop(PROP_RO))
+        except Exception:
+            read_only = False
+
+        if on_disk:
+            file_path = os.path.abspath(path)
             file_name = os.path.basename(file_path)
         else:
             file_path = CAP_UNSAVED
-            title = ed.get_prop(PROP_TAB_TITLE).lstrip('*')
+            title = (editor.get_prop(PROP_TAB_TITLE) or '').lstrip('*').strip()
             file_name = title or CAP_UNSAVED
 
-        lines = [
-            _('File path: {}').format(file_path),
-            _('File name: {}').format(file_name),
-            _('Status: {}').format(get_file_status(ed)),
-            _('Encoding: {}').format(get_encoding(ed)),
-            _('Lexer: {}').format(get_lexer(ed)),
-        ]
+        encoding = editor.get_prop(PROP_ENC) or CAP_NONE
+        try:
+            endings = format_line_endings(editor.get_prop(PROP_NEWLINE))
+        except Exception:
+            endings = CAP_NONE
+
+        info = {
+            'path': file_path,
+            'filename': file_name,
+            'status': format_status(on_disk, modified, read_only),
+            'encoding': encoding,
+            'line_endings': endings,
+            'lexer': self._lexer_name(editor),
+        }
 
         text = None
-        if saved:
-            lines.append(_('Size on disk: {}').format(format_size(os.path.getsize(filepath))))
+        if on_disk:
+            try:
+                info['size_disk'] = format_size(os.path.getsize(path))
+            except OSError:
+                info['size_disk'] = CAP_NONE
+            try:
+                info['modified'] = format_timestamp(os.path.getmtime(path))
+            except OSError:
+                info['modified'] = CAP_NONE
 
-        if modified or not saved:
-            text = ed.get_text_all()
-            lines.append(_('Size in memory: {}').format(format_size(len(text.encode('utf-8')))))
+        if modified or not on_disk or is_text_document(editor):
+            text = editor.get_text_all() or ''
 
-        if is_text_document(ed):
-            line_count = ed.get_line_count()
-            lines.append(_('Line count: {}').format(line_count))
+        if modified or not on_disk:
+            payload = text if text is not None else (editor.get_text_all() or '')
+            info['size_memory'] = format_size(len(payload.encode('utf-8')))
+
+        if is_text_document(editor):
+            info['lines'] = str(editor.get_line_count())
             if text is None:
-                text = ed.get_text_all()
-            lines.append(_('Word count: {}').format(count_words(text)))
+                text = editor.get_text_all() or ''
+            info['words'] = str(count_words(text))
+            info['characters'] = str(count_characters(text))
 
-        return '\n'.join(lines)
+        return format_file_info(info)
 
-    def _show_info_dialog(self, ed):
-        text = self._build_info_text(ed)
-
+    def _show_info(self, editor):
+        text = self._build_info(editor)
+        self._dialog_text = text
         w = 560
-        h = 320
+        h = 360
         dlg = dlg_proc(0, DLG_CREATE)
         dlg_proc(dlg, DLG_PROP_SET, prop={
             'cap': CAP_DIALOG,
             'w': w,
             'h': h,
-            'w_min': 360,
-            'h_min': 180,
+            'w_min': 380,
+            'h_min': 200,
             'border': DBORDER_SIZE,
         })
 
-        btn = dlg_proc(dlg, DLG_CTL_ADD, prop='button')
-        dlg_proc(dlg, DLG_CTL_PROP_SET, index=btn, prop={
-            'name': 'btn_ok',
-            'cap': _('&OK'),
+        btn_close = dlg_proc(dlg, DLG_CTL_ADD, prop='button')
+        dlg_proc(dlg, DLG_CTL_PROP_SET, index=btn_close, prop={
+            'name': 'btn_close',
+            'cap': _('&Close'),
             'a_l': None,
             'a_t': None,
             'a_r': ('', ']'),
@@ -515,28 +482,110 @@ class Command:
             'x': w - 100,
             'y': h - 6 - 25,
             'w': 94,
-            'on_change': self._info_dialog_close,
+            'on_change': self._info_close,
             'ex0': True,
+        })
+
+        btn_copy = dlg_proc(dlg, DLG_CTL_ADD, prop='button')
+        dlg_proc(dlg, DLG_CTL_PROP_SET, index=btn_copy, prop={
+            'name': 'btn_copy',
+            'cap': _('&Copy Info'),
+            'a_l': None,
+            'a_t': None,
+            'a_r': ('btn_close', '['),
+            'a_b': ('', ']'),
+            'sp_r': 6,
+            'sp_b': 6,
+            'x': w - 210,
+            'y': h - 6 - 25,
+            'w': 104,
+            'on_change': self._info_copy,
         })
 
         memo = dlg_proc(dlg, DLG_CTL_ADD, prop='memo')
         dlg_proc(dlg, DLG_CTL_PROP_SET, index=memo, prop={
             'name': 'memo_info',
             'val': text,
-            'a_r': ('btn_ok', ']'),
-            'a_b': ('btn_ok', '['),
+            'a_r': ('', ']'),
+            'a_b': ('btn_close', '['),
+            'sp_a': 6,
             'x': 6,
             'y': 6,
             'w': w - 12,
             'h': h - 6 - 25 - 12,
             'ex0': True,
             'ex1': True,
+            'ro': True,
         })
 
-        dlg_proc(dlg, DLG_CTL_FOCUS, name='btn_ok')
+        dlg_proc(dlg, DLG_CTL_FOCUS, name='btn_close')
         dlg_proc(dlg, DLG_SCALE)
         dlg_proc(dlg, DLG_SHOW_MODAL)
         dlg_proc(dlg, DLG_FREE)
 
-    def _info_dialog_close(self, id_dlg, id_ctl, data='', info=''):
+    def _info_close(self, id_dlg, id_ctl, data='', info=''):
         dlg_proc(id_dlg, DLG_HIDE)
+
+    def _info_copy(self, id_dlg, id_ctl, data='', info=''):
+        app_proc(PROC_SET_CLIP, self._dialog_text)
+        msg_status(_('File info copied'))
+
+    def _file_info(self, editor):
+        try:
+            self._show_info(editor)
+        except Exception:
+            _log_error('file_info')
+
+    def menu_file_info(self, info=''):
+        self._file_info(self._current_ed(prefer_tab=True))
+
+    def menu_reveal(self, info=''):
+        self._reveal(self._current_ed(prefer_tab=True))
+
+    def menu_open_folder(self, info=''):
+        self._open_folder(self._current_ed(prefer_tab=True))
+
+    def menu_terminal(self, info=''):
+        self._open_terminal(self._current_ed(prefer_tab=True))
+
+    def menu_reload(self, info=''):
+        self._reload(self._current_ed(prefer_tab=True))
+
+    def menu_save_copy(self, info=''):
+        self._save_copy(self._current_ed(prefer_tab=True))
+
+    def menu_duplicate(self, info=''):
+        self._duplicate(self._current_ed(prefer_tab=True))
+
+    def menu_close_delete(self, info=''):
+        self._close_and_delete(self._current_ed(prefer_tab=True))
+
+    def menu_export_html(self, info=''):
+        self._export_html(self._current_ed(prefer_tab=True))
+
+    def cmd_file_info(self, info=''):
+        self._file_info(self._current_ed(prefer_tab=False))
+
+    def cmd_reveal(self, info=''):
+        self._reveal(self._current_ed(prefer_tab=False))
+
+    def cmd_open_folder(self, info=''):
+        self._open_folder(self._current_ed(prefer_tab=False))
+
+    def cmd_open_terminal(self, info=''):
+        self._open_terminal(self._current_ed(prefer_tab=False))
+
+    def cmd_reload(self, info=''):
+        self._reload(self._current_ed(prefer_tab=False))
+
+    def cmd_save_copy(self, info=''):
+        self._save_copy(self._current_ed(prefer_tab=False))
+
+    def cmd_duplicate(self, info=''):
+        self._duplicate(self._current_ed(prefer_tab=False))
+
+    def cmd_close_delete(self, info=''):
+        self._close_and_delete(self._current_ed(prefer_tab=False))
+
+    def cmd_export_html(self, info=''):
+        self._export_html(self._current_ed(prefer_tab=False))

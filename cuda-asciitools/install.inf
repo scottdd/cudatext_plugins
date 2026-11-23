@@ -1,0 +1,54 @@
+[info]
+version=0.1.0
+title=ASCII Tools
+desc=Highlight, find, list, strip, normalize, and transliterate non-ASCII text
+type=cudatext-plugin
+subdir=cuda_asciitools
+homepage=https://github.com/scottdd/cudatext_plugins/tree/main/cuda-asciitools
+api=1.0.300
+
+[item1]
+section=events
+events=on_start,on_change_slow,on_init_plugins_menu
+
+[item10]
+section=commands
+caption=ASCII Tools\Highlight Non-ASCII
+method=menu_highlight_nonascii
+
+[item11]
+section=commands
+caption=ASCII Tools\Un-highlight Non-ASCII
+method=menu_unhighlight_nonascii
+
+[item12]
+section=commands
+caption=ASCII Tools\Next Non-ASCII Character
+hotkey=Alt+F3
+method=menu_next_nonascii
+
+[item13]
+section=commands
+caption=ASCII Tools\Previous Non-ASCII Character
+hotkey=Alt+Shift+F3
+method=menu_prev_nonascii
+
+[item14]
+section=commands
+caption=ASCII Tools\List Non-ASCII Characters
+method=menu_list_nonascii
+
+[item15]
+section=commands
+caption=ASCII Tools\Transliterate to ASCII
+method=menu_transliterate_ascii
+
+[item16]
+section=commands
+caption=ASCII Tools\Strip Non-ASCII Characters
+method=menu_strip_nonascii
+
+[item17]
+section=commands
+caption=ASCII Tools\Normalize Punctuation && Spaces to ASCII
+method=menu_normalize_punctuation

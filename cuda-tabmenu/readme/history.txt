@@ -1,3 +1,16 @@
+0.7.0 (2026-11-23)
+rebuilt as a tab context menu for file-level actions only
+Non-ASCII tools moved to the separate ASCII Tools plugin (cuda-asciitools)
+upgrade: if you used Highlight / Next / Previous / Transliterate, install ASCII Tools from the user channel
+removed Search menu injection, on_change_slow, and the vendored anyascii package
+File Info (Ctrl+Shift+Alt+I) with Copy Info
+Reveal in File Manager, Open Folder, Open Terminal Here
+Reopen / Reload from Disk, Save a Copy As, Duplicate File
+Close and Delete File (confirms the full path; disabled when unsaved)
+Export to HTML via cmd_FileExportHtml on the clicked tab
+tab actions use the editor passed to on_tab_menu; Plugins menu and hotkeys use the focused editor
+version 0.7.0 sorts after 0.6.3 so Addon Manager can upgrade an existing install
+
 0.6.3 (2026-09-15)
 pack a flat plugin zip (install.inf and __init__.py at zip root)
 nested cuda_tabmenu/ in the zip installed as py/cuda_tabmenu/cuda_tabmenu/ so Command never loaded
