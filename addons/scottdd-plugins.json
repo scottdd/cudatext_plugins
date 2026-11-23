@@ -6,6 +6,12 @@
     "v": "0.1.1"
   },
   {
+    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-asciitools-v0.1.0/plugin.ASCII_Tools.zip",
+    "desc": "Highlight, find, list, strip, normalize, and transliterate non-ASCII text",
+    "module": "cuda_asciitools",
+    "v": "0.1.0"
+  },
+  {
     "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-tabmenu-v0.6.3/plugin.Tab_Menu.zip",
     "desc": "Tab menu: file info, open path, Non-ASCII highlight/navigate/transliterate; Search menu and hotkeys",
     "module": "cuda_tabmenu",
