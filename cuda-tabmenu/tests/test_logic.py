@@ -8,8 +8,13 @@ from logic import (
     FileOpError,
     available_attempts,
     bgr_from_rgb,
+    KEY_C,
+    KEY_ESCAPE,
+    KEY_RETURN,
     build_file_info_dialog,
+    button_ex_label,
     clean_duplicate_basename,
+    file_info_key_action,
     coerce_tcolor,
     count_characters,
     count_words,
@@ -751,8 +756,15 @@ class FileInfoDialogTests(unittest.TestCase):
             self.assertEqual(status['prop']['ex2'], file_info_status_colors(dark, 'modified')['text'])
             close = _control(spec, 'btn_close')
             copy = _control(spec, 'btn_copy')
-            self.assertTrue(close['prop']['ex0'])
+            self.assertEqual(close['type'], 'button_ex')
+            self.assertEqual(copy['type'], 'button_ex')
+            self.assertNotIn('&', close['prop']['cap'])
+            self.assertNotIn('&', copy['prop']['cap'])
+            self.assertNotIn('ex0', close['prop'])
             self.assertNotIn('ex0', copy['prop'])
+            self.assertTrue(close['focusable'])
+            self.assertTrue(copy['focusable'])
+            self.assertTrue(spec['keypreview'])
             self.assertEqual(spec['focus'], 'btn_close')
             self.assertTrue(spec['resizable'])
             self.assertEqual(spec['min_height'], spec['height'])
@@ -802,6 +814,15 @@ class FileInfoDialogTests(unittest.TestCase):
         )
         self.assertEqual(_control(spec, 'btn_close')['prop']['cap'], 'Fermer')
         self.assertEqual(_control(spec, 'btn_copy')['prop']['cap'], 'Copier')
+        stripped = build_file_info_dialog(
+            {'status': 'saved', 'filename': 'a.txt', 'path': '/tmp/a.txt'},
+            captions={'close': '&Close', 'copy': '&Copy Info'},
+        )
+        self.assertEqual(_control(stripped, 'btn_close')['prop']['cap'], 'Close')
+        self.assertEqual(_control(stripped, 'btn_copy')['prop']['cap'], 'Copy Info')
+        plain = build_file_info_dialog({'status': 'saved', 'filename': 'a.txt', 'path': '/tmp/a.txt'})
+        self.assertEqual(_control(plain, 'btn_close')['prop']['cap'], 'Close')
+        self.assertEqual(_control(plain, 'btn_copy')['prop']['cap'], 'Copy Info')
         self.assertEqual(_control(spec, 'path')['prop']['val'], '(Non enregistre)')
         self.assertEqual(spec['copy_text'], format_file_info({'status': 'unsaved', 'filename': 'Draft'}))
         empty = build_file_info_dialog({}, None)
@@ -817,8 +838,63 @@ class FileInfoDialogTests(unittest.TestCase):
         self.assertIn("DLG_CTL_FOCUS, name='btn_close'", text)
         self.assertIn('PROC_SET_CLIP', text)
         self.assertIn('self._dialog_text', text)
+        self.assertIn('BTN_SET_FOCUSABLE', text)
+        self.assertIn('DLG_CTL_HANDLE', text)
+        self.assertIn("'on_key_down': self._info_key_down", text)
+        self.assertIn("prop['on_change'] = self._info_close", text)
+        self.assertIn("prop['on_change'] = self._info_copy", text)
+        self.assertIn('file_info_key_action', text)
         self.assertNotIn('memo_info', text)
         self.assertNotIn("prop='memo'", text)
+        self.assertNotIn("'&Close'", text)
+        self.assertNotIn("'&Copy Info'", text)
+
+
+class ButtonAndKeyTests(unittest.TestCase):
+    def test_button_ex_labels_drop_accelerators(self):
+        self.assertEqual(button_ex_label('&Close'), 'Close')
+        self.assertEqual(button_ex_label('&Copy Info'), 'Copy Info')
+        self.assertEqual(button_ex_label('Save && Copy'), 'Save  Copy')
+        self.assertEqual(button_ex_label(None), '')
+        self.assertNotIn('&', button_ex_label('&Close') + button_ex_label('&Copy Info'))
+
+    def test_buttons_are_theme_controls_anchored_bottom_right(self):
+        spec = build_file_info_dialog(_saved_info(), dark_theme())
+        close = _control(spec, 'btn_close')
+        copy = _control(spec, 'btn_copy')
+        self.assertEqual([item['type'] for item in spec['controls'][:2]], ['button_ex', 'button_ex'])
+        self.assertEqual(close['role'], 'close')
+        self.assertEqual(copy['role'], 'copy')
+        self.assertIsNone(close['prop']['a_l'])
+        self.assertIsNone(close['prop']['a_t'])
+        self.assertEqual(close['prop']['a_r'], ('', ']'))
+        self.assertEqual(close['prop']['a_b'], ('', ']'))
+        self.assertEqual(copy['prop']['a_r'], ('btn_close', '['))
+        self.assertEqual(copy['prop']['a_b'], ('', ']'))
+        self.assertGreater(close['prop']['x'], copy['prop']['x'])
+        self.assertEqual(close['prop']['y'], copy['prop']['y'])
+        self.assertGreater(close['prop']['w'], 0)
+        self.assertGreater(copy['prop']['w'], len('Copy Info') * 6)
+        self.assertTrue(spec['keypreview'])
+        self.assertEqual(spec['focus'], 'btn_close')
+        self.assertNotIn('&', close['prop']['cap'] + copy['prop']['cap'])
+
+    def test_escape_closes_and_ctrl_c_stays_with_the_path(self):
+        self.assertEqual(file_info_key_action(KEY_ESCAPE, ''), 'close')
+        self.assertEqual(file_info_key_action(27, ''), 'close')
+        self.assertIsNone(file_info_key_action(KEY_ESCAPE, 's'))
+        self.assertIsNone(file_info_key_action(KEY_ESCAPE, 'c'))
+        self.assertIsNone(file_info_key_action(KEY_ESCAPE, 'a'))
+        # Enter is the focused button_ex's own click, not a form-level close.
+        self.assertIsNone(file_info_key_action(KEY_RETURN, ''))
+        self.assertIsNone(file_info_key_action(13, 'c'))
+        # Ctrl+C copies the path selection. It must not become Copy Info.
+        self.assertIsNone(file_info_key_action(KEY_C, 'c'))
+        self.assertIsNone(file_info_key_action(ord('C'), 'c'))
+        self.assertIsNone(file_info_key_action(KEY_C, 'sc'))
+        self.assertIsNone(file_info_key_action(KEY_C, ''))
+        self.assertIsNone(file_info_key_action('nope', ''))
+        self.assertIsNone(file_info_key_action(None, 'c'))
 
 
 if __name__ == '__main__':

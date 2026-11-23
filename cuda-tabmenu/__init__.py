@@ -4,7 +4,7 @@ import subprocess
 import sys
 import traceback
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 from cudatext import *
 from cudatext_cmd import cmd_FileClose, cmd_FileExportHtml, cmd_FileReopen
@@ -14,7 +14,9 @@ from .logic import (
     FileOpError,
     available_attempts,
     build_file_info_dialog,
+    button_ex_label,
     clean_duplicate_basename,
+    file_info_key_action,
     count_characters,
     count_words,
     encode_document,
@@ -471,8 +473,8 @@ class Command:
             self._build_info(editor),
             _ui_theme_dict(),
             captions={
-                'close': _('&Close'),
-                'copy': _('&Copy Info'),
+                'close': button_ex_label(_('Close')),
+                'copy': button_ex_label(_('Copy Info')),
                 'unsaved': _('(Unsaved)'),
             },
         )
@@ -486,6 +488,10 @@ class Command:
             'h_min': spec['min_height'],
             'border': DBORDER_SIZE,
             'color': spec['palette']['background'],
+            # Form KeyDown sees Escape only when keypreview is on. TFormDummy
+            # then closes a modal dialog. Our handler hides on Escape too.
+            'keypreview': bool(spec.get('keypreview')),
+            'on_key_down': self._info_key_down,
         })
         try:
             for control in spec['controls']:
@@ -497,11 +503,27 @@ class Command:
                     prop['on_change'] = self._info_copy
                 index = dlg_proc(dlg, DLG_CTL_ADD, prop=control['type'])
                 dlg_proc(dlg, DLG_CTL_PROP_SET, index=index, prop=prop)
+                if control.get('focusable'):
+                    # Constructor sets Focusable without the Qt5 ControlStyle
+                    # update. BTN_SET_FOCUSABLE runs SetFocusable so Close can
+                    # take focus on Qt5.
+                    handle = dlg_proc(dlg, DLG_CTL_HANDLE, index=index)
+                    if handle:
+                        button_proc(handle, BTN_SET_FOCUSABLE, '1')
             dlg_proc(dlg, DLG_CTL_FOCUS, name='btn_close')
             dlg_proc(dlg, DLG_SCALE)
             dlg_proc(dlg, DLG_SHOW_MODAL)
         finally:
             dlg_proc(dlg, DLG_FREE)
+
+    def _info_key_down(self, id_dlg, id_ctl, data=''):
+        # False blocks the key. Ctrl+C is not a dialog command, so the path
+        # edit still copies its selection. Enter is left to the focused
+        # button_ex, which clicks itself.
+        if file_info_key_action(id_ctl, data) == 'close':
+            dlg_proc(id_dlg, DLG_HIDE)
+            return False
+        return True
 
     def _info_close(self, id_dlg, id_ctl, data='', info=''):
         dlg_proc(id_dlg, DLG_HIDE)

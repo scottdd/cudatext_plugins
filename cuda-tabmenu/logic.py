@@ -8,7 +8,7 @@ import time
 from urllib.parse import quote
 
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 
 class FileOpError(Exception):
@@ -486,17 +486,53 @@ def _label(name, caption, x, y, w, h, palette, muted=False, style='', size=None,
     return {'type': 'label', 'prop': prop}
 
 
+# dlg_proc on_key_down id_ctl values (virtual keys).
+KEY_ESCAPE = 27
+KEY_RETURN = 13
+KEY_C = 67
+
+
+def button_ex_label(caption):
+    """Caption for button_ex. ATButton draws TextOut of the raw string.
+
+    '&' is not an accelerator (a plain TButton would underline the next
+    letter). Strip every '&' so '&Close' does not paint as an ampersand
+    and the two buttons cannot share an Alt+C mnemonic.
+    """
+    return ('' if caption is None else str(caption)).replace('&', '')
+
+
+def file_info_key_action(key, modifiers=''):
+    """Dialog key action: 'close', or None to leave the key alone.
+
+    Escape with no modifiers closes. Enter is not handled here: a focused
+    button_ex (ATButton) clicks itself on Enter, and Enter in the path edit
+    must not dismiss the dialog. Ctrl+C is never claimed, so the read-only
+    path edit can copy its selection.
+    """
+    try:
+        key = int(key)
+    except (TypeError, ValueError):
+        return None
+    mods = modifiers if isinstance(modifiers, str) else ''
+    if key == KEY_ESCAPE and mods == '':
+        return 'close'
+    return None
+
+
 def build_file_info_dialog(info, theme=None, captions=None):
     """Describe a theme-aware file-info dialog without touching CudaText.
 
     copy_text is exactly format_file_info(info). Colors in the control props
-    are TColors (0xBBGGRR). The host sets DBORDER_SIZE, focuses btn_close
-    (ex0 default button), and calls DLG_SCALE after creating the controls.
+    are TColors (0xBBGGRR). Buttons are button_ex so they use the UI theme.
+    The host focuses btn_close, sets keypreview so Escape reaches the form,
+    and calls DLG_SCALE after creating the controls. button_ex ignores ex0
+    (that flag is TButton.Default only).
     """
     info = dict(info or {})
     captions = captions or {}
-    close_cap = captions.get('close') or '&Close'
-    copy_cap = captions.get('copy') or '&Copy Info'
+    close_cap = button_ex_label(captions.get('close') or 'Close')
+    copy_cap = button_ex_label(captions.get('copy') or 'Copy Info')
     unsaved_label = captions.get('unsaved') or '(Unsaved)'
 
     palette = resolve_ui_palette(theme)
@@ -550,9 +586,13 @@ def build_file_info_dialog(info, theme=None, captions=None):
     controls = []
     close_x = width - _RIGHT - _CLOSE_W
     copy_x = close_x - _BUTTON_SPACING - _COPY_W
+    # button_ex (ATButton) paints the UI-theme button colors. It is focusable
+    # after BTN_SET_FOCUSABLE (the Qt5 constructor skips that ControlStyle fix).
+    # Enter clicks the focused button. There is no ex0 / Default-button flag.
     controls.append({
-        'type': 'button',
+        'type': 'button_ex',
         'role': 'close',
+        'focusable': True,
         'prop': {
             'name': 'btn_close',
             'cap': close_cap,
@@ -566,12 +606,13 @@ def build_file_info_dialog(info, theme=None, captions=None):
             'y': button_y,
             'w': _CLOSE_W,
             'h': _BUTTON_H,
-            'ex0': True,
+            'tab_stop': True,
         },
     })
     controls.append({
-        'type': 'button',
+        'type': 'button_ex',
         'role': 'copy',
+        'focusable': True,
         'prop': {
             'name': 'btn_copy',
             'cap': copy_cap,
@@ -585,6 +626,7 @@ def build_file_info_dialog(info, theme=None, captions=None):
             'y': button_y,
             'w': _COPY_W,
             'h': _BUTTON_H,
+            'tab_stop': True,
         },
     })
 
@@ -718,6 +760,7 @@ def build_file_info_dialog(info, theme=None, captions=None):
         'min_height': height,
         'resizable': True,
         'focus': 'btn_close',
+        'keypreview': True,
         'copy_text': format_file_info(info),
         'palette': palette,
         'accent': status_colors['accent'],

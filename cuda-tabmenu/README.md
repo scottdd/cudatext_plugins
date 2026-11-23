@@ -2,7 +2,7 @@
 
 CudaText plugin that adds file actions to the tab right-click menu. Each action uses the tab you clicked. **Plugins → Tab Menu** (and the File Info hotkey) use the focused editor instead.
 
-**Version:** 0.7.0
+**Version:** 0.7.1
 **Author:** Scott ([scottdd](https://github.com/scottdd))
 
 ## Upgrade from 0.6.3
@@ -33,7 +33,7 @@ On the tab you right-clicked, items that need a file on disk are disabled for un
 
 | Command | Hotkey | Notes |
 |---------|--------|--------|
-| File Info... | `Ctrl+Shift+Alt+I` | Path, name, status (unsaved / saved / modified, and read-only), encoding, line endings, lexer, size on disk, size in memory when modified or unsaved (UTF-8 bytes), lines, words, characters, last modified time. **Copy Info** copies the summary. |
+| File Info... | `Ctrl+Shift+Alt+I` | Themed dialog: filename, folder, status (saved / modified / unsaved, and read-only), encoding, line endings, lexer, size on disk, size in memory when modified or unsaved (UTF-8 bytes), lines, words, characters, last modified time. **Copy Info** copies the same plain-text summary. |
 | Reveal in File Manager | | Windows `explorer /select,<path>`, macOS `open -R`, Linux `org.freedesktop.FileManager1.ShowItems` with a fallback of `xdg-open` on the folder. Disabled if unsaved. |
 | Open Folder | | Opens the file’s folder in the file manager. Disabled if unsaved. |
 | Open Terminal Here | | Windows Terminal (`wt -d`) or `cmd`, macOS Terminal, or the first common Linux terminal on `PATH`. Disabled if unsaved. |
