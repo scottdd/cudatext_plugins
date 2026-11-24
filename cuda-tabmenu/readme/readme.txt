@@ -1,5 +1,5 @@
 Plugin for CudaText: Tab Menu (cuda_tabmenu)
-Version 0.7.1
+Version 0.7.2
 Author: Scott (https://github.com/scottdd)
 
 Right-click a tab for file actions on THAT tab. The same commands are under
@@ -62,6 +62,11 @@ TAB MENU (clicked tab) AND PLUGINS → TAB MENU (focused tab)
       the file permanently (not the trash). Disabled when unsaved.
   Export to HTML...
       Runs cmd_FileExportHtml on the clicked text tab.
+
+  Each item shows the hotkey currently assigned to that Plugins command.
+  Only File Info has a default (Ctrl+Shift+Alt+I). Pressing a key runs the
+  command on the focused editor. The tab you clicked is used when you pick
+  the item from the menu.
 
   Stock tab items are not repeated: Close, Close others / all / left / right,
   Rename, Save, Save As, Copy path / folder / filename, Move tab to group,

@@ -1,5 +1,5 @@
 Plugin for CudaText: ASCII Tools (cuda_asciitools)
-Version 0.1.0
+Version 0.2.0
 Author: Scott (https://github.com/scottdd)
 
 ASCII Tools finds non-ASCII characters, lists them, and turns common
@@ -25,7 +25,13 @@ TRUST
     https://github.com/scottdd/cudatext_plugins
 
 WHAT IT DOES
-  Plugins → ASCII Tools, and the same submenu under Search → ASCII Tools:
+  Plugins → ASCII Tools, Search → ASCII Tools, and the tab you right-click
+  (ASCII Tools). The tab submenu runs on the tab you clicked. Plugins,
+  Search, the Command Palette, and the key itself use the focused editor.
+  A non-text tab shows the submenu disabled.
+
+  Search and the tab submenu show the hotkey currently assigned to each
+  command (Command Palette, F9). Pressing the key still runs once.
 
   - Highlight Non-ASCII
       Marks code points above 127. While highlighting is on, edits refresh

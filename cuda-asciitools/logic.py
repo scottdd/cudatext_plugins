@@ -2,7 +2,109 @@
 
 import unicodedata
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
+
+
+# menu_proc(..., hotkey=) stores the string in TMenuItem.ShortCut via
+# TextToShortCutRaw. That value is one key plus modifiers (a Word). It is not
+# a place to repeat a command that already has a Plugins-menu shortcut.
+#
+# CudaText's Plugins menu already assigns ShortCut from the keymap
+# (UpdateMenuPlugins_Shortcuts_Work → GetShortcutFromCommand). GetShortcutFromCommand
+# returns only Keys1, and only when that slot is a single stroke (Keys1.Data[1]=0);
+# a chord yields 0, so the Plugins item shows no shortcut. PROC_GET_HOTKEY returns
+# Keys1.ToString + '|' + Keys2.ToString, for example "Alt+F3|", "Alt+F3|Ctrl+Shift+N",
+# or "Ctrl+K * Ctrl+A|Ctrl+K * B".
+#
+# Passing the same stroke as hotkey= again is unsafe:
+# - MENU_ADD ignores an empty hotkey. MENU_SET_HOTKEY of '' clears ShortCut.
+# - A dual value ("Alt+F3|Ctrl+N") and a chord ("Ctrl+K * Ctrl+A") are not a
+#   TShortCut. TextToShortCutRaw returns 0, so the item is kept but shows nothing.
+#   The API says hotkey combos are not allowed.
+# - On Qt, QAction.setShortcut is a window shortcut even for a popup item. A second
+#   action with the same key is ambiguous, and Qt then fires neither. That would
+#   stop Alt+F3, not run the command twice.
+# - On Win32 and GTK the main menu clicks the first matching ShortCut and eats
+#   the key, so it does not double-fire with the keymap. The Plugins item already
+#   owns that shortcut. Search is walked before Plugins, so a second ShortCut
+#   would steal the click onto the Search item (still once, still the focused
+#   editor) and on Qt can disable the key.
+#
+# The caption text after a tab is display-only. Win32 and Qt draw it in the
+# shortcut column and do not register a QAction / menu accelerator. Chords are
+# shown there because ShortCut cannot hold them.
+
+
+def primary_hotkey(raw):
+    """Primary stroke from a PROC_GET_HOTKEY result.
+
+    The first slot is Keys1. A secondary-only value ("|Ctrl+N") has no primary,
+    matching GetShortcutFromCommand, which never reads Keys2. Non-strings and
+    failures become ''.
+    """
+    if not isinstance(raw, str):
+        return ''
+    return raw.split('|', 1)[0].strip()
+
+
+def is_chord_hotkey(hotkey):
+    """True when the stroke is a multi-key chord (CudaText separates strokes with *).
+
+    TMenuItem.ShortCut and TextToShortCutRaw cannot represent this. Spaces
+    around '*' are optional ("Ctrl+K * Ctrl+A" and "Ctrl+B*B").
+    """
+    return isinstance(hotkey, str) and '*' in hotkey
+
+
+def shortcut_for_menu(raw):
+    """Value that would be safe to pass as menu_proc hotkey=, or ''.
+
+    Empty and chord results must be omitted: TextToShortCutRaw turns them into
+    0. Callers that mirror a Plugins-menu command must not pass even a simple
+    stroke; use caption_with_hotkey so the Plugins item keeps the only ShortCut.
+    """
+    primary = primary_hotkey(raw)
+    if not primary or is_chord_hotkey(primary):
+        return ''
+    return primary
+
+
+def caption_with_hotkey(caption, raw):
+    """Caption plus a display-only shortcut. Does not register ShortCut."""
+    primary = primary_hotkey(raw)
+    if not primary:
+        return caption
+    return '%s\t%s' % (caption, primary)
+
+
+def lookup_command_hotkey(get_hotkey, command_id):
+    """Call get_hotkey(command_id) and return the primary stroke.
+
+    get_hotkey is app_proc(PROC_GET_HOTKEY, command_id) or a test double.
+    Any exception, including a missing PROC_GET_HOTKEY, degrades to ''.
+    """
+    try:
+        raw = get_hotkey(command_id)
+    except Exception:
+        return ''
+    return primary_hotkey(raw)
+
+
+_ABSENT_MENU_HANDLES = (None, '', 0, '0')
+
+
+def usable_menu_handle(handle):
+    """Numeric menu id, or None when it is missing or the string id 'tab'."""
+    if handle in _ABSENT_MENU_HANDLES or handle == 'tab':
+        return None
+    return handle
+
+
+def tab_handle_from_prop(prop):
+    """id from menu_proc('tab', MENU_GET_PROP), or None."""
+    if not isinstance(prop, dict):
+        return None
+    return usable_menu_handle(prop.get('id'))
 
 
 def is_non_ascii_char(ch):

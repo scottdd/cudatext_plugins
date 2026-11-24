@@ -1,5 +1,5 @@
 [info]
-version=0.1.0
+version=0.2.0
 title=ASCII Tools
 desc=Highlight, find, list, strip, normalize, and transliterate non-ASCII text
 type=cudatext-plugin
@@ -9,7 +9,7 @@ api=1.0.300
 
 [item1]
 section=events
-events=on_start,on_change_slow,on_init_plugins_menu
+events=on_start,on_change_slow,on_init_plugins_menu,on_tab_menu,on_focus,on_state
 
 [item10]
 section=commands
