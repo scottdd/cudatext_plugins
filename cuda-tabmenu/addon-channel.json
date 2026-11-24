@@ -1,8 +1,8 @@
 [
   {
-    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-tabmenu-v0.7.1/plugin.Tab_Menu.zip",
+    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-tabmenu-v0.7.2/plugin.Tab_Menu.zip",
     "desc": "Tab context menu: file info, reveal, folder, terminal, reload, save copy, duplicate, delete, HTML export",
     "module": "cuda_tabmenu",
-    "v": "0.7.1"
+    "v": "0.7.2"
   }
 ]
