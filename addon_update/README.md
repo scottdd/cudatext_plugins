@@ -43,6 +43,7 @@ Config file: `settings/cuda_addon_update.json`
 | `interval_hours` | 12 | Hours between checks |
 | `check_on_startup` | true | Check after startup |
 | `startup_delay_sec` | 45 | Delay before the first check |
+| `poll_minutes` | 5 | How often the idle timer wakes to check whether the configured check interval has elapsed |
 | `notify` | true | Status-bar summary |
 | `notify_dialog` | false | Dialog when something updated |
 | `update_plugins` | true | |
@@ -77,6 +78,14 @@ ln -sfn ~/Projects/cudatext_plugins/addon_update ~/.config/cudatext/py/cuda_addo
 ```
 
 Do not use Addon Manager **Install from GitHub** on the monorepo root URL. The repository name does not match `subdir=cuda_addon_update`.
+
+## Tests
+
+From the monorepo root:
+
+```bash
+python3 -m unittest discover -s addon_update/tests -t addon_update
+```
 
 ## License
 
