@@ -1,8 +1,8 @@
 [
   {
-    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-asciitools-v0.1.0/plugin.ASCII_Tools.zip",
+    "url": "https://github.com/scottdd/cudatext_plugins/releases/download/cuda-asciitools-v0.2.0/plugin.ASCII_Tools.zip",
     "desc": "Highlight, find, list, strip, normalize, and transliterate non-ASCII text",
     "module": "cuda_asciitools",
-    "v": "0.1.0"
+    "v": "0.2.0"
   }
 ]
