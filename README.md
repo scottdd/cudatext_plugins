@@ -51,6 +51,8 @@ Tab Menu **0.7.0** is file actions only. Non-ASCII tools (highlight, next/previo
 
 `0.7.0` sorts after `0.6.3`, so Addon Manager can upgrade an existing Tab Menu install once that release is on the channel. After upgrading, install **ASCII Tools** from the same user channel if you still want the character tools.
 
+**0.7.1** is the current Tab Menu release. File Info uses a theme-matched dialog (header, status, metadata). Copy Info still copies the plain-text summary. `0.7.1` sorts after `0.7.0`.
+
 ## For developers
 
 Each subdirectory is a standalone plugin with its own `install.inf`, `pack.sh`, and `readme/`.

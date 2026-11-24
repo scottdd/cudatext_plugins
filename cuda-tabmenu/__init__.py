@@ -4,7 +4,7 @@ import subprocess
 import sys
 import traceback
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 from cudatext import *
 from cudatext_cmd import cmd_FileClose, cmd_FileExportHtml, cmd_FileReopen
@@ -13,12 +13,14 @@ from cudax_lib import get_translation
 from .logic import (
     FileOpError,
     available_attempts,
+    build_file_info_dialog,
+    button_ex_label,
     clean_duplicate_basename,
+    file_info_key_action,
     count_characters,
     count_words,
     encode_document,
     first_path,
-    format_file_info,
     format_line_endings,
     format_size,
     format_status,
@@ -72,6 +74,17 @@ def _log_error(where):
 
 def _program_exists(name):
     return shutil.which(name) is not None
+
+
+def _ui_theme_dict():
+    """Active UI theme, or None when the API is missing or returns something else."""
+    try:
+        theme = app_proc(PROC_THEME_UI_DICT_GET, '')
+    except Exception:
+        return None
+    if isinstance(theme, dict):
+        return theme
+    return None
 
 
 print('cuda_tabmenu module imported, version %s' % __version__)
@@ -453,75 +466,64 @@ class Command:
             info['words'] = str(count_words(text))
             info['characters'] = str(count_characters(text))
 
-        return format_file_info(info)
+        return info
 
     def _show_info(self, editor):
-        text = self._build_info(editor)
-        self._dialog_text = text
-        w = 560
-        h = 360
+        spec = build_file_info_dialog(
+            self._build_info(editor),
+            _ui_theme_dict(),
+            captions={
+                'close': button_ex_label(_('Close')),
+                'copy': button_ex_label(_('Copy Info')),
+                'unsaved': _('(Unsaved)'),
+            },
+        )
+        self._dialog_text = spec['copy_text']
         dlg = dlg_proc(0, DLG_CREATE)
         dlg_proc(dlg, DLG_PROP_SET, prop={
             'cap': CAP_DIALOG,
-            'w': w,
-            'h': h,
-            'w_min': 380,
-            'h_min': 200,
+            'w': spec['width'],
+            'h': spec['height'],
+            'w_min': spec['min_width'],
+            'h_min': spec['min_height'],
             'border': DBORDER_SIZE,
+            'color': spec['palette']['background'],
+            # Form KeyDown sees Escape only when keypreview is on. TFormDummy
+            # then closes a modal dialog. Our handler hides on Escape too.
+            'keypreview': bool(spec.get('keypreview')),
+            'on_key_down': self._info_key_down,
         })
+        try:
+            for control in spec['controls']:
+                prop = dict(control['prop'])
+                role = control.get('role')
+                if role == 'close':
+                    prop['on_change'] = self._info_close
+                elif role == 'copy':
+                    prop['on_change'] = self._info_copy
+                index = dlg_proc(dlg, DLG_CTL_ADD, prop=control['type'])
+                dlg_proc(dlg, DLG_CTL_PROP_SET, index=index, prop=prop)
+                if control.get('focusable'):
+                    # Constructor sets Focusable without the Qt5 ControlStyle
+                    # update. BTN_SET_FOCUSABLE runs SetFocusable so Close can
+                    # take focus on Qt5.
+                    handle = dlg_proc(dlg, DLG_CTL_HANDLE, index=index)
+                    if handle:
+                        button_proc(handle, BTN_SET_FOCUSABLE, '1')
+            dlg_proc(dlg, DLG_CTL_FOCUS, name='btn_close')
+            dlg_proc(dlg, DLG_SCALE)
+            dlg_proc(dlg, DLG_SHOW_MODAL)
+        finally:
+            dlg_proc(dlg, DLG_FREE)
 
-        btn_close = dlg_proc(dlg, DLG_CTL_ADD, prop='button')
-        dlg_proc(dlg, DLG_CTL_PROP_SET, index=btn_close, prop={
-            'name': 'btn_close',
-            'cap': _('&Close'),
-            'a_l': None,
-            'a_t': None,
-            'a_r': ('', ']'),
-            'a_b': ('', ']'),
-            'sp_a': 6,
-            'x': w - 100,
-            'y': h - 6 - 25,
-            'w': 94,
-            'on_change': self._info_close,
-            'ex0': True,
-        })
-
-        btn_copy = dlg_proc(dlg, DLG_CTL_ADD, prop='button')
-        dlg_proc(dlg, DLG_CTL_PROP_SET, index=btn_copy, prop={
-            'name': 'btn_copy',
-            'cap': _('&Copy Info'),
-            'a_l': None,
-            'a_t': None,
-            'a_r': ('btn_close', '['),
-            'a_b': ('', ']'),
-            'sp_r': 6,
-            'sp_b': 6,
-            'x': w - 210,
-            'y': h - 6 - 25,
-            'w': 104,
-            'on_change': self._info_copy,
-        })
-
-        memo = dlg_proc(dlg, DLG_CTL_ADD, prop='memo')
-        dlg_proc(dlg, DLG_CTL_PROP_SET, index=memo, prop={
-            'name': 'memo_info',
-            'val': text,
-            'a_r': ('', ']'),
-            'a_b': ('btn_close', '['),
-            'sp_a': 6,
-            'x': 6,
-            'y': 6,
-            'w': w - 12,
-            'h': h - 6 - 25 - 12,
-            'ex0': True,
-            'ex1': True,
-            'ro': True,
-        })
-
-        dlg_proc(dlg, DLG_CTL_FOCUS, name='btn_close')
-        dlg_proc(dlg, DLG_SCALE)
-        dlg_proc(dlg, DLG_SHOW_MODAL)
-        dlg_proc(dlg, DLG_FREE)
+    def _info_key_down(self, id_dlg, id_ctl, data=''):
+        # False blocks the key. Ctrl+C is not a dialog command, so the path
+        # edit still copies its selection. Enter is left to the focused
+        # button_ex, which clicks itself.
+        if file_info_key_action(id_ctl, data) == 'close':
+            dlg_proc(id_dlg, DLG_HIDE)
+            return False
+        return True
 
     def _info_close(self, id_dlg, id_ctl, data='', info=''):
         dlg_proc(id_dlg, DLG_HIDE)

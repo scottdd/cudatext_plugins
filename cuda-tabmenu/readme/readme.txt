@@ -1,5 +1,5 @@
 Plugin for CudaText: Tab Menu (cuda_tabmenu)
-Version 0.7.0
+Version 0.7.1
 Author: Scott (https://github.com/scottdd)
 
 Right-click a tab for file actions on THAT tab. The same commands are under
@@ -35,7 +35,8 @@ TAB MENU (clicked tab) AND PLUGINS → TAB MENU (focused tab)
       Path, filename, status (unsaved / saved / modified, plus read-only),
       encoding, line endings, lexer, size on disk, size in memory when the
       tab is modified or unsaved (UTF-8), line / word / character counts,
-      and last modified time. Copy Info copies that summary.
+      and last modified time. The dialog follows the UI theme. Copy Info
+      copies that summary. Close is focused; Escape closes the dialog.
   Reveal in File Manager
       Windows: explorer /select,<path>
       macOS:   open -R <path>

@@ -1,3 +1,8 @@
+0.7.1 (2026-11-23)
+File Info dialog: themed header, status pills, and File / Text groups
+File Info buttons are theme-matched button_ex (dark and light UI themes)
+Copy Info still copies the plain-text summary; Escape closes, Ctrl+C stays with the path field
+
 0.7.0 (2026-11-23)
 rebuilt as a tab context menu for file-level actions only
 Non-ASCII tools moved to the separate ASCII Tools plugin (cuda-asciitools)
