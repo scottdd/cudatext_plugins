@@ -1,22 +1,26 @@
 import sys
 import traceback
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 from cudatext import *
 from cudax_lib import get_translation
 
 from .anyascii import anyascii as transliterate_to_ascii
 from .logic import (
+    caption_with_hotkey,
     collect_nonascii_in_spans,
     collect_nonascii_positions,
     find_next_nonascii,
     find_prev_nonascii,
     finder_wrap_enabled,
     format_nonascii_report,
+    lookup_command_hotkey,
     normalize_punctuation,
     selections_from_carets,
     strip_nonascii,
+    tab_handle_from_prop,
+    usable_menu_handle,
 )
 
 _ = get_translation(__file__)
@@ -38,6 +42,8 @@ NONASCII_HIGHLIGHT_STYLE = dict(
     border_down=4,
 )
 SEARCH_MENU_TAG = 'cuda_asciitools_search'
+TAB_TAG_PREFIX = 'cuda_asciitools_tab_'
+COMMAND_MODULE = 'cuda_asciitools'
 
 
 def is_text_document(editor):
@@ -107,16 +113,66 @@ class Command:
         self._highlighted = set()
         self._dialog_text = ''
         self._dialog_action = None
+        self._tab_ed = None
+        self._tab_menu_handle = None
+        self._search_hotkey_sig = None
 
     def on_start(self, ed_self):
         print('ASCII Tools %s loaded' % __version__)
         sys.stdout.flush()
+        # Resolve the string id now, before any plugin adds popup items.
+        # Touching it again calls InitPopupTab. Current CudaText builds that
+        # popup only once; older builds rebuilt it and dropped plugin items.
+        try:
+            self._tab_root()
+        except Exception:
+            _log_error('on_start')
 
     def on_init_plugins_menu(self, ed_self):
         try:
             self._install_search_menu()
         except Exception:
             _log_error('on_init_plugins_menu')
+
+    def on_focus(self, ed_self):
+        # F9 writes keys.json and refreshes the Plugins menu without an
+        # on_state. Closing that dialog returns focus here, so the Search
+        # submenu can pick up the new PROC_GET_HOTKEY values. APPSTATE_CONFIG_REREAD
+        # is user.json, not keys.json; on_state still refreshes when it fires.
+        try:
+            sig = self._hotkey_signature()
+            if sig == self._search_hotkey_sig:
+                return
+            self._install_search_menu()
+        except Exception:
+            _log_error('on_focus')
+
+    def on_state(self, ed_self, state):
+        try:
+            if state != APPSTATE_CONFIG_REREAD:
+                return
+            self._search_hotkey_sig = None
+            self._install_search_menu()
+        except Exception:
+            _log_error('on_state')
+
+    def on_tab_menu(self, ed_self):
+        try:
+            self._tab_ed = ed_self
+            tab_id = self._tab_root()
+            self._clear_our_tab_items(tab_id)
+            menu_proc(tab_id, MENU_ADD, caption='-', tag=TAB_TAG_PREFIX + 'sep')
+            sub_id = menu_proc(
+                tab_id,
+                MENU_ADD,
+                caption=CAP_MENU,
+                tag=TAB_TAG_PREFIX + 'menu',
+            )
+            self._fill_menu(sub_id, for_tab=True)
+            if sub_id and not is_text_document(ed_self):
+                menu_proc(sub_id, MENU_SET_ENABLED, command=False)
+        except Exception:
+            _log_error('on_tab_menu')
 
     def on_change_slow(self, ed_self):
         try:
@@ -162,39 +218,79 @@ class Command:
             return None
         return editor
 
+    def _read_hotkey(self, command_id):
+        return app_proc(PROC_GET_HOTKEY, command_id)
+
+    def _lookup_hotkey(self, method_name):
+        return lookup_command_hotkey(self._read_hotkey, COMMAND_MODULE + ',' + method_name)
+
+    def _hotkey_signature(self):
+        parts = []
+        for spec in self._command_specs():
+            if spec[0] == '-':
+                continue
+            parts.append(self._lookup_hotkey(spec[2]))
+        return tuple(parts)
+
+    def _tab_root(self):
+        # One string-id access, during on_start. on_tab_menu uses the number.
+        cached = usable_menu_handle(self._tab_menu_handle)
+        if cached is not None:
+            return cached
+        handle = tab_handle_from_prop(menu_proc('tab', MENU_GET_PROP))
+        if handle is not None:
+            self._tab_menu_handle = handle
+            return handle
+        return 'tab'
+
+    def _clear_our_tab_items(self, menu_id):
+        items = menu_proc(menu_id, MENU_ENUM) or []
+        ids = []
+        for item in items:
+            tag = item.get('tag')
+            if isinstance(tag, str) and tag.startswith(TAB_TAG_PREFIX):
+                ids.append(item['id'])
+        for item_id in ids:
+            menu_proc(item_id, MENU_REMOVE)
+
     def _install_search_menu(self):
+        self._search_hotkey_sig = self._hotkey_signature()
         items = menu_proc('top-sr', MENU_ENUM) or []
         existing = [item for item in items if item.get('tag') == SEARCH_MENU_TAG]
         if existing:
             parent_id = existing[0]['id']
             menu_proc(parent_id, MENU_CLEAR)
-            self._fill_menu(parent_id)
+            self._fill_menu(parent_id, for_tab=False)
             return
         menu_proc('top-sr', MENU_ADD, caption='-', tag=SEARCH_MENU_TAG + '_sep')
         parent_id = menu_proc('top-sr', MENU_ADD, caption=CAP_MENU, tag=SEARCH_MENU_TAG)
-        self._fill_menu(parent_id)
+        self._fill_menu(parent_id, for_tab=False)
 
     def _command_specs(self):
+        # (caption, active-editor callback, install.inf method, tab callback)
         return [
-            (CAP_HIGHLIGHT, self.menu_highlight_nonascii),
-            (CAP_UNHIGHLIGHT, self.menu_unhighlight_nonascii),
-            ('-', None),
-            (CAP_NEXT, self.menu_next_nonascii),
-            (CAP_PREV, self.menu_prev_nonascii),
-            ('-', None),
-            (CAP_LIST, self.menu_list_nonascii),
-            ('-', None),
-            (CAP_TRANSLITERATE, self.menu_transliterate_ascii),
-            (CAP_STRIP, self.menu_strip_nonascii),
-            (CAP_NORMALIZE, self.menu_normalize_punctuation),
+            (CAP_HIGHLIGHT, self.menu_highlight_nonascii, 'menu_highlight_nonascii', self.tab_highlight_nonascii),
+            (CAP_UNHIGHLIGHT, self.menu_unhighlight_nonascii, 'menu_unhighlight_nonascii', self.tab_unhighlight_nonascii),
+            ('-', None, None, None),
+            (CAP_NEXT, self.menu_next_nonascii, 'menu_next_nonascii', self.tab_next_nonascii),
+            (CAP_PREV, self.menu_prev_nonascii, 'menu_prev_nonascii', self.tab_prev_nonascii),
+            ('-', None, None, None),
+            (CAP_LIST, self.menu_list_nonascii, 'menu_list_nonascii', self.tab_list_nonascii),
+            ('-', None, None, None),
+            (CAP_TRANSLITERATE, self.menu_transliterate_ascii, 'menu_transliterate_ascii', self.tab_transliterate_ascii),
+            (CAP_STRIP, self.menu_strip_nonascii, 'menu_strip_nonascii', self.tab_strip_nonascii),
+            (CAP_NORMALIZE, self.menu_normalize_punctuation, 'menu_normalize_punctuation', self.tab_normalize_punctuation),
         ]
 
-    def _fill_menu(self, parent_id):
-        for caption, command in self._command_specs():
+    def _fill_menu(self, parent_id, for_tab):
+        for caption, active_command, method_name, tab_command in self._command_specs():
             if caption == '-':
                 menu_proc(parent_id, MENU_ADD, caption='-')
                 continue
-            menu_proc(parent_id, MENU_ADD, caption=caption, command=command)
+            shown = caption_with_hotkey(caption, self._lookup_hotkey(method_name))
+            command = tab_command if for_tab else active_command
+            # hotkey= is intentionally omitted. See logic.caption_with_hotkey.
+            menu_proc(parent_id, MENU_ADD, caption=shown, command=command)
 
     def _do_highlight(self, editor):
         try:
@@ -492,3 +588,27 @@ class Command:
 
     def menu_normalize_punctuation(self, info=''):
         self._do_normalize(ed)
+
+    def tab_highlight_nonascii(self, info=''):
+        self._do_highlight(self._tab_ed)
+
+    def tab_unhighlight_nonascii(self, info=''):
+        self._do_unhighlight(self._tab_ed)
+
+    def tab_next_nonascii(self, info=''):
+        self._do_next(self._tab_ed)
+
+    def tab_prev_nonascii(self, info=''):
+        self._do_prev(self._tab_ed)
+
+    def tab_transliterate_ascii(self, info=''):
+        self._do_transliterate(self._tab_ed)
+
+    def tab_list_nonascii(self, info=''):
+        self._do_list(self._tab_ed)
+
+    def tab_strip_nonascii(self, info=''):
+        self._do_strip(self._tab_ed)
+
+    def tab_normalize_punctuation(self, info=''):
+        self._do_normalize(self._tab_ed)

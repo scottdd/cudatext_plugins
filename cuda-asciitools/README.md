@@ -2,7 +2,7 @@
 
 CudaText plugin that finds non-ASCII characters and converts the punctuation you usually want as plain ASCII. Accented letters stay unless you ask to transliterate or strip them.
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Author:** Scott ([scottdd](https://github.com/scottdd))
 
 These commands moved out of **Tab Menu** in 0.7.0. Install **ASCII Tools** if you still want them (including `Alt+F3` / `Alt+Shift+F3`).
@@ -25,7 +25,11 @@ The channel lists **published** releases. A version shows up there after it is r
 
 ## Commands
 
-The same items are under **Plugins → ASCII Tools** and **Search → ASCII Tools** (the Search entry is added when plugins load; its tag is `cuda_asciitools_search`).
+The same items are under **Plugins → ASCII Tools**, **Search → ASCII Tools**, and the tab you right-click (**ASCII Tools**). Search is added when plugins load; its tag is `cuda_asciitools_search`. The tab submenu's tag prefix is `cuda_asciitools_tab_`.
+
+Clicking the tab submenu runs the command on **that tab**. Plugins, Search, the Command Palette, and the key itself keep using the **focused editor**. A tab that is not a text document shows the submenu disabled.
+
+Search and the tab submenu show the hotkey currently assigned to each command, including one you set with Command Palette `F9`. Pressing the key still runs once, on the focused editor.
 
 | Command | What it does |
 |---------|----------------|

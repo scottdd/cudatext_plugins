@@ -54,14 +54,17 @@ class PackScriptTests(unittest.TestCase):
         self.assertFalse(any(n == 'dist' or n.startswith('dist/') for n in names))
         self.assertFalse(any('__pycache__' in n or n.endswith('.pyc') for n in names))
 
-    def test_zip_has_no_tab_menu_hooks(self):
+    def test_zip_has_its_own_tab_submenu(self):
         init = subprocess.check_output(['unzip', '-p', str(ZIP_PATH), '__init__.py'], text=True)
         inf = subprocess.check_output(['unzip', '-p', str(ZIP_PATH), 'install.inf'], text=True)
-        self.assertNotIn('on_tab_menu', init)
-        self.assertNotIn('on_tab_menu', inf)
-        self.assertNotIn('cuda_tabmenu_search', init)
+        self.assertIn('on_tab_menu', init)
+        self.assertIn('on_tab_menu', inf)
+        self.assertIn('cuda_asciitools_tab_', init)
         self.assertIn('cuda_asciitools_search', init)
+        self.assertNotIn('cuda_tabmenu', init)
+        self.assertNotIn('cuda_tabmenu_search', init)
         self.assertNotIn('anyascii', inf)
+        self.assertEqual(init.count("menu_proc('tab'"), 1)
 
 
 class VersionSyncTests(unittest.TestCase):
@@ -69,7 +72,7 @@ class VersionSyncTests(unittest.TestCase):
         inf_ver = _version_from(PLUGIN_DIR / 'install.inf', 'version=')
         init_ver = _version_from(PLUGIN_DIR / '__init__.py', '__version__')
         logic_ver = _version_from(PLUGIN_DIR / 'logic.py', '__version__')
-        self.assertEqual(inf_ver, '0.1.0')
+        self.assertEqual(inf_ver, '0.2.0')
         self.assertEqual(inf_ver, init_ver)
         self.assertEqual(inf_ver, logic_ver)
 
@@ -84,7 +87,7 @@ class VersionSyncTests(unittest.TestCase):
 
     def test_history_starts_with_version(self):
         history = (PLUGIN_DIR / 'readme' / 'history.txt').read_text(encoding='utf-8')
-        self.assertTrue(history.startswith('0.1.0 '))
+        self.assertTrue(history.startswith('0.2.0 '))
 
     def test_search_tag_is_not_the_old_tab_menu_tag(self):
         init = (PLUGIN_DIR / '__init__.py').read_text(encoding='utf-8')

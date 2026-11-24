@@ -1,3 +1,8 @@
+0.7.2 (2026-11-24)
+tab menu items show the hotkey currently assigned to each Plugins command
+the shortcut is drawn in the caption; the Plugins menu item keeps the real ShortCut
+the tab popup's numeric handle is resolved at startup, before the first right-click, so ASCII Tools can add its submenu beside these items
+
 0.7.1 (2026-11-23)
 File Info dialog: themed header, status pills, and File / Text groups
 File Info buttons are theme-matched button_ex (dark and light UI themes)

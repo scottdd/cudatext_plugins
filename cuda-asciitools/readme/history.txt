@@ -1,3 +1,11 @@
+0.2.0 (2026-11-24)
+tab right-click: ASCII Tools submenu, same items as Search → ASCII Tools
+the submenu runs on the tab you clicked; Plugins, Search, Command Palette, and hotkeys stay on the focused editor
+a non-text tab shows that submenu disabled
+Search and the tab submenu show the hotkey currently assigned to each command
+the shortcut is drawn in the caption so it is not registered a second time (Qt would treat a duplicate as ambiguous)
+the tab popup's numeric handle is cached at startup so this submenu can share the menu with Tab Menu
+
 0.1.0 (2026-11-23)
 initial release, extracted from Tab Menu 0.6.3
 Plugins → ASCII Tools and Search → ASCII Tools

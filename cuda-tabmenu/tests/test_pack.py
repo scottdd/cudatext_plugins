@@ -69,7 +69,7 @@ class VersionSyncTests(unittest.TestCase):
         inf_ver = _version_from(PLUGIN_DIR / 'install.inf', 'version=')
         init_ver = _version_from(PLUGIN_DIR / '__init__.py', '__version__')
         logic_ver = _version_from(PLUGIN_DIR / 'logic.py', '__version__')
-        self.assertEqual(inf_ver, '0.7.1')
+        self.assertEqual(inf_ver, '0.7.2')
         self.assertEqual(inf_ver, init_ver)
         self.assertEqual(inf_ver, logic_ver)
         self.assertGreater(inf_ver, '0.6.3')
@@ -85,7 +85,7 @@ class VersionSyncTests(unittest.TestCase):
 
     def test_history_starts_with_version_and_mentions_split(self):
         history = (PLUGIN_DIR / 'readme' / 'history.txt').read_text(encoding='utf-8')
-        self.assertTrue(history.startswith('0.7.1 '))
+        self.assertTrue(history.startswith('0.7.2 '))
         self.assertIn('ASCII Tools', history)
         self.assertIn('cuda-asciitools', history)
 

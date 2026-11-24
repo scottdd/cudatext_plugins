@@ -1,5 +1,5 @@
 [info]
-version=0.7.1
+version=0.7.2
 title=Tab Menu
 desc=Tab context menu: file info, reveal, folder, terminal, reload, save copy, duplicate, delete, HTML export
 type=cudatext-plugin

@@ -2,7 +2,7 @@
 
 CudaText plugin that adds file actions to the tab right-click menu. Each action uses the tab you clicked. **Plugins → Tab Menu** (and the File Info hotkey) use the focused editor instead.
 
-**Version:** 0.7.1
+**Version:** 0.7.2
 **Author:** Scott ([scottdd](https://github.com/scottdd))
 
 ## Upgrade from 0.6.3
@@ -45,7 +45,7 @@ On the tab you right-clicked, items that need a file on disk are disabled for un
 
 CudaText already has Close, Close others / all / left / right, Rename, Save, Save As, Copy full path / folder / filename, Move tab to group, Pinned, and Set tab color. This plugin does not add those again.
 
-Tab-menu commands are bound to the plugin `Command` instance. The numeric tab-popup handle is cached so later updates do not rebuild the stock menu and wipe the items. Errors are printed to the Console (stdout).
+Tab-menu commands are bound to the plugin `Command` instance. The numeric tab-popup handle is cached when the plugin starts, before the first right-click, so a later update does not rebuild the stock menu and wipe items added by this plugin or by ASCII Tools. Each item shows the hotkey currently assigned to its Plugins command (Command Palette, F9). Pressing the key runs that command on the focused editor. Errors are printed to the Console (stdout).
 
 ## Manual install
 

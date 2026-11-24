@@ -4,7 +4,7 @@ import subprocess
 import sys
 import traceback
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 from cudatext import *
 from cudatext_cmd import cmd_FileClose, cmd_FileExportHtml, cmd_FileReopen
@@ -15,6 +15,7 @@ from .logic import (
     available_attempts,
     build_file_info_dialog,
     button_ex_label,
+    caption_with_hotkey,
     clean_duplicate_basename,
     file_info_key_action,
     count_characters,
@@ -25,6 +26,7 @@ from .logic import (
     format_size,
     format_status,
     format_timestamp,
+    lookup_command_hotkey,
     open_folder_attempts,
     platform_from_suffix,
     prepare_destination,
@@ -33,7 +35,9 @@ from .logic import (
     safe_delete_file,
     safe_write_bytes,
     suggest_duplicate_name,
+    tab_handle_from_prop,
     terminal_attempts,
+    usable_menu_handle,
 )
 
 _ = get_translation(__file__)
@@ -52,6 +56,7 @@ CAP_NONE = _('(none)')
 CAP_UNSAVED = _('(unsaved)')
 
 TAG_PREFIX = 'cuda_tabmenu_item_'
+COMMAND_MODULE = 'cuda_tabmenu'
 
 OS_PLATFORM = platform_from_suffix(app_proc(PROC_GET_OS_SUFFIX, ''))
 
@@ -101,19 +106,32 @@ class Command:
     def on_start(self, ed_self):
         print('Tab Menu %s loaded' % __version__)
         sys.stdout.flush()
+        # Resolve the string id before on_tab_menu. If another plugin also
+        # resolves it on the first right-click, InitPopupTab on an older
+        # CudaText rebuilds the popup and drops whoever added items first.
+        # Current builds create PopupTab only while it is nil; caching still
+        # keeps this plugin off the string id once items exist.
+        try:
+            self._tab_root()
+        except Exception:
+            _log_error('on_start')
 
     def _tab_root(self):
-        # String id 'tab' calls InitPopupTab on every menu_proc access and
-        # rebuilds the stock popup, wiping plugin items. Resolve the numeric
-        # handle once, then add only to that handle.
-        if self._tab_menu_handle not in (None, '', 0, '0'):
-            return self._tab_menu_handle
-        prop = menu_proc('tab', MENU_GET_PROP)
-        handle = prop.get('id') if isinstance(prop, dict) else None
-        if handle not in (None, '', 0, '0'):
+        cached = usable_menu_handle(self._tab_menu_handle)
+        if cached is not None:
+            return cached
+        handle = tab_handle_from_prop(menu_proc('tab', MENU_GET_PROP))
+        if handle is not None:
             self._tab_menu_handle = handle
             return handle
         return 'tab'
+
+    def _read_hotkey(self, command_id):
+        return app_proc(PROC_GET_HOTKEY, command_id)
+
+    def _hotkey_caption(self, caption, method_name):
+        raw = lookup_command_hotkey(self._read_hotkey, COMMAND_MODULE + ',' + method_name)
+        return caption_with_hotkey(caption, raw)
 
     def _current_ed(self, prefer_tab=False):
         if prefer_tab and self._tab_ed is not None:
@@ -130,11 +148,12 @@ class Command:
         for item_id in ids:
             menu_proc(item_id, MENU_REMOVE)
 
-    def _add_item(self, parent_id, key, caption, command, enabled):
+    def _add_item(self, parent_id, key, caption, command, enabled, method_name):
+        # hotkey= is omitted. The Plugins item already owns ShortCut for method_name.
         item_id = menu_proc(
             parent_id,
             MENU_ADD,
-            caption=caption,
+            caption=self._hotkey_caption(caption, method_name),
             command=command,
             tag=TAG_PREFIX + key,
         )
@@ -150,15 +169,15 @@ class Command:
             text_doc = is_text_document(ed_self)
             self._clear_our_items(tab_id)
             menu_proc(tab_id, MENU_ADD, caption='-', tag=TAG_PREFIX + 'sep')
-            self._add_item(tab_id, 'info', CAP_FILE_INFO, self.menu_file_info, True)
-            self._add_item(tab_id, 'reveal', CAP_REVEAL, self.menu_reveal, saved)
-            self._add_item(tab_id, 'folder', CAP_OPEN_FOLDER, self.menu_open_folder, saved)
-            self._add_item(tab_id, 'terminal', CAP_TERMINAL, self.menu_terminal, saved)
-            self._add_item(tab_id, 'reload', CAP_RELOAD, self.menu_reload, saved)
-            self._add_item(tab_id, 'savecopy', CAP_SAVE_COPY, self.menu_save_copy, True)
-            self._add_item(tab_id, 'duplicate', CAP_DUPLICATE, self.menu_duplicate, saved)
-            self._add_item(tab_id, 'delete', CAP_DELETE, self.menu_close_delete, saved)
-            self._add_item(tab_id, 'html', CAP_EXPORT, self.menu_export_html, text_doc)
+            self._add_item(tab_id, 'info', CAP_FILE_INFO, self.menu_file_info, True, 'cmd_file_info')
+            self._add_item(tab_id, 'reveal', CAP_REVEAL, self.menu_reveal, saved, 'cmd_reveal')
+            self._add_item(tab_id, 'folder', CAP_OPEN_FOLDER, self.menu_open_folder, saved, 'cmd_open_folder')
+            self._add_item(tab_id, 'terminal', CAP_TERMINAL, self.menu_terminal, saved, 'cmd_open_terminal')
+            self._add_item(tab_id, 'reload', CAP_RELOAD, self.menu_reload, saved, 'cmd_reload')
+            self._add_item(tab_id, 'savecopy', CAP_SAVE_COPY, self.menu_save_copy, True, 'cmd_save_copy')
+            self._add_item(tab_id, 'duplicate', CAP_DUPLICATE, self.menu_duplicate, saved, 'cmd_duplicate')
+            self._add_item(tab_id, 'delete', CAP_DELETE, self.menu_close_delete, saved, 'cmd_close_delete')
+            self._add_item(tab_id, 'html', CAP_EXPORT, self.menu_export_html, text_doc, 'cmd_export_html')
         except Exception:
             _log_error('on_tab_menu')
 
