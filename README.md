@@ -21,6 +21,8 @@ Independent [CudaText](https://cudatext.github.io/) plugins by [scottdd](https:/
 
 The channel file lists **published** release zips. A change on `main` is not installed until that plugin is released and the channel file is updated.
 
+In this multi-plugin repository, GitHub's "Latest" release badge reflects whichever single plugin was published most recently, so install via the User channel URL above or each plugin's own tagged release.
+
 ### Manual install (no channel)
 
 1. Download `plugin.<Name>.zip` from [GitHub Releases](https://github.com/scottdd/cudatext_plugins/releases).
@@ -39,19 +41,23 @@ On macOS and Linux, CudaText needs a system Python 3 to run plugins. Windows bui
 
 ## Plugins
 
-| Directory | Module (`py/…`) | Description |
-|-----------|-----------------|-------------|
-| [cuda-asciitools](cuda-asciitools/) | `cuda_asciitools` | ASCII Tools: highlight, find, list, strip, normalize, and transliterate non-ASCII text |
-| [cuda-tabmenu](cuda-tabmenu/) | `cuda_tabmenu` | Tab Menu: tab right-click actions (file info, reveal, folder, terminal, reload, copy, duplicate, delete, export HTML) |
-| [addon_update](addon_update/) | `cuda_addon_update` | Addons Update: auto-update installed add-ons on startup / timer |
+| Directory | Module (`py/…`) | Version | Description |
+|-----------|-----------------|---------|-------------|
+| [cuda-asciitools](cuda-asciitools/) | `cuda_asciitools` | 0.2.0 | ASCII Tools: highlight, find, list, strip, normalize, and transliterate non-ASCII text |
+| [cuda-tabmenu](cuda-tabmenu/) | `cuda_tabmenu` | 0.7.2 | Tab Menu: tab right-click actions (file info, reveal, folder, terminal, reload, save copy, duplicate, delete, export HTML) |
+| [addon_update](addon_update/) | `cuda_addon_update` | 0.1.1 | Addons Update: auto-update installed add-ons on startup / timer |
 
-### Tab Menu 0.6.3 → 0.7.0
+### Tab Menu 0.7.2 and ASCII Tools 0.2.0
 
-Tab Menu **0.7.0** is file actions only. Non-ASCII tools (highlight, next/previous on `Alt+F3` / `Alt+Shift+F3`, transliterate, and the newer list / strip / normalize commands) live in **ASCII Tools**.
+Tab Menu **0.7.2** is the current release. Tab Menu **0.7.0** is file actions only (the `0.6.3 → 0.7.0` split). Non-ASCII tools (highlight, next/previous on `Alt+F3` / `Alt+Shift+F3`, transliterate, and the newer list / strip / normalize commands) live in **[ASCII Tools](cuda-asciitools/)**.
 
 `0.7.0` sorts after `0.6.3`, so Addon Manager can upgrade an existing Tab Menu install once that release is on the channel. After upgrading, install **ASCII Tools** from the same user channel if you still want the character tools.
 
-**0.7.1** is the current Tab Menu release. File Info uses a theme-matched dialog (header, status, metadata). Copy Info still copies the plain-text summary. `0.7.1` sorts after `0.7.0`.
+**0.7.1** uses a theme-matched File Info dialog (header, status, metadata). Copy Info still copies the plain-text summary. `0.7.1` sorts after `0.7.0`.
+
+**0.7.2** shows the live hotkey currently assigned to each tab-menu item.
+
+**ASCII Tools 0.2.0** adds the tab right-click `ASCII Tools` submenu and live hotkeys in the Search menu and the tab submenu.
 
 ## For developers
 
@@ -90,6 +96,7 @@ Prerequisites: [GitHub CLI](https://cli.github.com/) logged in (`gh auth login`)
 ```bash
 ./release.sh cuda-asciitools
 ./release.sh cuda-tabmenu
+./release.sh addon_update
 ```
 
 This will:
@@ -97,7 +104,7 @@ This will:
 - run that plugin's `pack.sh` → `dist/plugin.Name.zip`
 - update `addons/scottdd-plugins.json` and the plugin's `addon-channel.json`
 - commit and push those channel changes to `main`
-- create (or update) a GitHub release tagged `<plugin>-vX.Y` with the zip attached
+- create (or update) a GitHub release tagged `<plugin>-vX.Y.Z` with the zip attached
 
 Do not point `addons/scottdd-plugins.json` at a zip that has not been uploaded. The release script writes the channel URL when it publishes the release.
 

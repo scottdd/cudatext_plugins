@@ -37,6 +37,7 @@ Config file: settings/cuda_addon_update.json
   interval_hours     (number, default 12)
   check_on_startup   (bool, default true)
   startup_delay_sec  (number, default 45)
+  poll_minutes       (number, default 5)   — how often the idle timer wakes to check whether the configured check interval has elapsed
   notify             (bool, default true)  — msg_status summary
   notify_dialog      (bool, default false) — msg_box when something updated
   update_plugins     (bool, default true)

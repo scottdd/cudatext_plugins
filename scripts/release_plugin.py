@@ -68,11 +68,44 @@ def read_version_from_init(plugin_dir: Path) -> str | None:
     return match.group(1) if match else None
 
 
+# Newest-first history headers, e.g. "0.7.2 (2026-11-24)" or "0.6 (2026-09-14)".
+_VERSION_HEADER = re.compile(r"^(\d+\.\d+(?:\.\d+)*)\s+\(")
+
+
+def _version_header_indexes(lines: list[str]) -> list[int] | None:
+    """Indexes of version headers, or None when the file is not versioned.
+
+    Unstructured notes keep the older line-capped excerpt.
+    """
+    start = 0
+    while start < len(lines) and not lines[start].strip():
+        start += 1
+    if start >= len(lines) or _VERSION_HEADER.match(lines[start]) is None:
+        return None
+    return [index for index in range(start, len(lines)) if _VERSION_HEADER.match(lines[index])]
+
+
 def notes_from_history(history_path: Path, *, max_lines: int = 8) -> str:
+    """Release notes from ``readme/history.txt``.
+
+    A versioned history (newest block first) returns the newest version
+    block in full and stops at the next version header. Later blocks are
+    omitted, so an older entry is neither pulled into the notes nor cut off
+    mid-entry. ``max_lines`` is a plain line cap only for histories that do
+    not use version headers.
+    """
     if not history_path.is_file():
         return ""
     lines = history_path.read_text(encoding="utf-8").splitlines()
-    return "\n".join(lines[:max_lines]).strip()
+    headers = _version_header_indexes(lines)
+    if not headers:
+        return "\n".join(lines[:max_lines]).strip()
+
+    end = headers[1] if len(headers) > 1 else len(lines)
+    chunk = lines[headers[0]:end]
+    while chunk and not chunk[-1].strip():
+        chunk.pop()
+    return "\n".join(chunk).strip()
 
 
 def load_channel() -> list[dict]:
