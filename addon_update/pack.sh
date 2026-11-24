@@ -26,6 +26,7 @@ rsync -a \
   --exclude addon-channel.json \
   --exclude release.json \
   --exclude tests \
+  --exclude DEVELOPERS.md \
   "$ROOT/" "$STAGE/"
 
 find "$STAGE" -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
